@@ -1,0 +1,15 @@
+{
+  "id": "mara",
+  "name": "Mara",
+  "identity": "A courier trying to reach her younger brother in the northern settlements.",
+  "desire": "Reach the north before the seasonal storms close the road.",
+  "fear": "Arriving too late and discovering she abandoned her brother twice.",
+  "boundaries": ["Will not threaten children", "Avoids stealing from people who are visibly worse off"],
+  "speech": {"style": "short, practical, avoids emotional admissions"},
+  "currentState": {"fatigue": 0.62, "fuelLiters": 2},
+  "relationships": {"oren": {"trust": 0.15}},
+  "knowledge": {
+    "factIds": ["bridge-rumor", "mara-dies-later"],
+    "privateFacts": ["She has only enough medicine for one more week."]
+  }
+}

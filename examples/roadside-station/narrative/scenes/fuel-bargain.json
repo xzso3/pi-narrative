@@ -1,0 +1,18 @@
+{
+  "id": "fuel-bargain",
+  "title": "Last Fuel at Mile 83",
+  "location": "A wind-battered roadside station beside the old northern highway.",
+  "situation": "Mara arrives nearly dry. Oren publicly claims the station has only five liters left.",
+  "cast": ["mara", "oren"],
+  "publicFactIds": [],
+  "publicEvents": ["A dust storm is visible on the southern horizon."],
+  "actorGoals": {
+    "mara": "Acquire at least ten liters without losing the medicine in her pack.",
+    "oren": "Make Mara leave without discovering the hidden reserve."
+  },
+  "outcome": {
+    "stateChanges": [
+      "To be decided after simulation and writing; this source scene is not canon."
+    ]
+  }
+}

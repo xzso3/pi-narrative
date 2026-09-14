@@ -1,4 +1,4 @@
 node_modules/
+.pi/npm/
 .DS_Store
-*.tgz
-coverage/
+*.log

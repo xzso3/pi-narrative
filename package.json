@@ -1,0 +1,38 @@
+{
+  "name": "pi-narrative",
+  "version": "0.1.0",
+  "description": "MVP narrative pipeline for Pi: knowledge-isolated roleplay contexts, scene validation, simulation capture, and explicit canonization.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check-package.mjs && npm test"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": ["extensions"],
+    "skills": ["skills"]
+  },
+  "files": [
+    "extensions",
+    "src",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "pi",
+    "agent",
+    "narrative",
+    "game-writing",
+    "roleplay",
+    "storytelling"
+  ]
+}

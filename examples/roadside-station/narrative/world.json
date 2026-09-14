@@ -1,0 +1,19 @@
+{
+  "facts": [
+    {
+      "id": "bridge-rumor",
+      "text": "Travelers say the northern bridge may be damaged.",
+      "actorVisible": true
+    },
+    {
+      "id": "underground-reserve",
+      "text": "The station keeper has 30 liters hidden in an underground reserve.",
+      "actorVisible": true
+    },
+    {
+      "id": "mara-dies-later",
+      "text": "Author-only future plan: Mara dies in chapter eight.",
+      "actorVisible": false
+    }
+  ]
+}

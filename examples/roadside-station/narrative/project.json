@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "0.1",
+  "id": "roadside-station-demo",
+  "title": "Roadside Station Demo",
+  "sceneOrder": ["fuel-bargain"]
+}

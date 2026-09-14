@@ -1,0 +1,15 @@
+{
+  "id": "oren",
+  "name": "Oren",
+  "identity": "The aging keeper of a half-functioning roadside fuel station.",
+  "desire": "Keep enough fuel to evacuate his daughter if the local militia returns.",
+  "fear": "Strangers learning that he still has a reserve.",
+  "boundaries": ["Will lie about stock", "Will not abandon his daughter"],
+  "speech": {"style": "civil but guarded, answers questions with questions"},
+  "currentState": {"fatigue": 0.44},
+  "relationships": {"mara": {"trust": 0.08}},
+  "knowledge": {
+    "factIds": ["underground-reserve"],
+    "privateFacts": ["His daughter has a fever and cannot travel today."]
+  }
+}
