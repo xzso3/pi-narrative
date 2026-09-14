@@ -26,25 +26,30 @@
 - Event-before-transcript crash recovery.
 - Resource-isolated Actor and Arbiter child sessions.
 
-## v0.4 — Game narrative semantics
+## v0.4 — Game narrative semantics ✅
 
-- Conditions and predicates over mutable state.
-- Player choices and branch transitions.
-- Quest/objective state machines.
+- Declarative predicates over mutable state/event history.
+- Deterministic scene entry/exit gates.
+- Authored player choices with validated effects.
+- Branch resolution with target-gate enforcement.
+- Derived quest/objective state machines.
 - Timeline ordering and continuity constraints.
-- Explicit gameplay consequences.
-- Scene entry/exit conditions.
+- Persisted engine-facing gameplay consequence descriptors.
+- Unified flow inspection through Pi tools/commands.
 
 ## v0.5 — Engine/export layer
 
-- Stable external schema and localization IDs.
+- Stable external semantic schema and localization IDs.
 - Unity-friendly export/import package.
+- Gameplay consequence acknowledgement/idempotency contract.
 - Validation report suitable for CI.
 - Snapshot/checkpoint strategy for long event logs.
+- Migration/versioning rules for narrative project data.
 
 ## v0.6 — Authoring UX
 
 - Narrative dashboard / graph view.
-- Scene and event diff/review UI.
+- Scene/choice/quest/event diff and review UI.
 - Character knowledge/state inspector.
+- Timeline/branch visualization.
 - Pi SDK/RPC-backed authoring application.

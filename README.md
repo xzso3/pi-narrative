@@ -1,14 +1,14 @@
 # Pi Narrative
 
-**Pi Narrative** is an experimental agent-based game narrative pipeline built as a Pi package. It separates author knowledge, character cognition, attempted action, world-state resolution, drafts, and approved canon.
+**Pi Narrative** is an experimental agent-based game narrative pipeline built as a Pi package. It separates author knowledge, character cognition, attempted action, world-state resolution, deterministic game-flow semantics, drafts, and approved canon.
 
-Current version: **v0.3 Narrative State Engine MVP**.
+Current version: **v0.4 Game Narrative Semantics MVP**.
 
 ## Core pipeline
 
 ```text
 Author / Director
-      ↓ scene + character + authored world
+      ↓ authored scene + character + semantic rules
 Knowledge filter
       ↓
 Ephemeral Actor child session
@@ -23,21 +23,26 @@ NarrativeEvent append-only log
       ↓ replay
 Mutable Narrative State
       ↓
-next Actor perception
+Declarative Predicate DSL
+      ↓
+Scene Gates / Choices / Quests / Branches / Timeline
+      ↓
+Gameplay consequence descriptors
       ↓
 Writer → Reviewer → human /canonize
 ```
 
-Two rules define v0.3:
+v0.4 adds a new invariant to the previous Actor/Arbiter boundary:
 
-1. **An Actor action is an attempt, not truth.** Only a validated Arbiter event can mutate world state.
-2. **The event log is the mutable-state source of truth.** `state/current.json` is a rebuildable cache.
+> **Game flow is deterministic data, not an LLM judgment.**
+
+Actors and the Arbiter can reason about free-form behavior. Scene availability, player choices, quest progression, branches, timeline constraints, and authored choice effects are evaluated by code.
 
 ## Why this differs from "AI writes dialogue"
 
 The Director can know future plans. Actors cannot. Each Actor runs in a fresh Pi child session with a filtered epistemic context. Other Actors perceive only observable behavior, spoken dialogue, and the Arbiter's observable resolution—not private intent, rationale, emotional metadata, or author-only facts.
 
-The Arbiter is also isolated from normal project tools, skills, extensions, and context files. It receives the attempted action, public scene conditions, and current mutable state, then proposes typed deltas. Deterministic code decides whether those deltas are legal.
+The Arbiter resolves uncertain natural-language attempts. It does **not** own authored game rules. A designer-authored choice such as “trade one medicine dose for ten liters” commits its explicit StateDelta effects directly after deterministic validation.
 
 ## Install
 
@@ -58,37 +63,88 @@ cd examples/roadside-station
 pi
 ```
 
-Then:
+Useful commands:
 
 ```text
 /narrative-status
 /narrative-state
-/simulate-scene fuel-bargain 6
+/narrative-flow fuel-bargain
+/choices fuel-bargain
+/choose departure trade-medicine-for-fuel
+/quests
+/timeline
+/simulate-scene fuel-bargain 4
 ```
 
-A run creates:
+The demo now contains two authored routes from the fuel-station scene:
+
+```text
+trade medicine for fuel
+        ↓
+  north-road
+
+accept shelter
+        ↓
+ storm-shelter
+```
+
+The route is not selected by prose. Choice effects update state, branch predicates evaluate that state, and each target scene independently enforces its own entry gate.
+
+## Predicate DSL
+
+v0.4 conditions are JSON trees using only:
+
+- `const`
+- `all`
+- `any`
+- `not`
+- `compare`
+- `event`
+
+Example:
+
+```json
+{
+  "op": "all",
+  "conditions": [
+    {
+      "op": "compare",
+      "path": "characters.mara.resources.fuelLiters",
+      "comparator": "gte",
+      "value": 10
+    },
+    {
+      "op": "compare",
+      "path": "world.flags.departedNorth",
+      "comparator": "eq",
+      "value": true
+    }
+  ]
+}
+```
+
+No JavaScript or arbitrary expressions are evaluated.
+
+## Semantic assets
 
 ```text
 narrative/
-├── simulations/        private + public turn records
-├── events/             append-only world-state events
+├── choices/            authored player decisions + deterministic effects
+├── branches/           scene-to-scene branch rules
+├── quests/             derived objective/quest state machines
+├── timeline.json       ordering/continuity constraints
+├── scenes/             entry/exit gates live with scene briefs
+├── events/             append-only authoritative state transitions
 └── state/
     ├── initial.json    revision-0 mutable state
     └── current.json    rebuildable replay cache
 ```
 
-## StateDelta types
-
-v0.3 deliberately supports a small mutation vocabulary:
-
-- `resource` — numeric character-owned resources; never below zero.
-- `relationship` — numeric metrics constrained to `[-1, 1]`.
-- `knowledge` — add an existing actor-visible world fact to a character.
-- `state` — set/increment character attributes or public world flags.
-
-Every accepted/partial Arbiter decision becomes one revisioned `NarrativeEvent`. Replaying `initial.json + events/*` deterministically reconstructs current state.
+Quest, branch, choice availability, and scene-gate results are **derived views**, not independent mutable state.
 
 ## Pi tools
+
+Simulation/state tools:
 
 - `narrative_actor_context`
 - `narrative_validate_scene`
@@ -98,14 +154,32 @@ Every accepted/partial Arbiter decision becomes one revisioned `NarrativeEvent`.
 - `narrative_simulation_state`
 - `narrative_state`
 - `narrative_event_log`
-- `narrative_status`
+
+v0.4 semantic tools:
+
+- `narrative_evaluate_condition`
+- `narrative_scene_gate`
+- `narrative_choices`
+- `narrative_apply_choice`
+- `narrative_quests`
+- `narrative_branches`
+- `narrative_timeline`
+- `narrative_gameplay_consequences`
+- `narrative_flow`
 
 Commands:
 
 - `/narrative-status`
 - `/narrative-state`
+- `/narrative-flow [scene-id]`
+- `/choices [scene-id]`
+- `/choose <choice-id> <option-id>`
+- `/quests`
+- `/timeline`
 - `/simulate-scene <scene-id> [max-turns]`
 - `/canonize <scene-id>`
+
+`/choose` asks for confirmation before appending the authoritative choice event.
 
 ## Architecture
 
@@ -116,20 +190,25 @@ Pi package
 ├── src/pi-arbiter-runner.ts          isolated Arbiter SDK adapter
 ├── src/runtime.js                    scene/turn orchestration
 ├── src/state-engine.js               event sourcing + typed deltas
+├── src/semantics.js                  deterministic game-flow semantics
 ├── src/core.js                       authored data + knowledge boundary
 ├── skills/                            author-facing narrative methods
 └── narrative project files           durable source of truth
 ```
 
-**Skill = cognition. Extension = infrastructure. Runtime = orchestration. Event log = mutable truth. Canon = approved authored output.**
+**Skill = cognition. Extension = infrastructure. Runtime = orchestration. Event log = mutable truth. Semantics = deterministic game flow. Canon = approved authored output.**
 
 ## Reliability properties
 
 - Author-only facts cannot enter Actor knowledge through normal authored context or initial mutable knowledge.
-- Child Actor/Arbiter sessions do not load project extensions, skills, prompt templates, themes, or context files.
+- Child Actor/Arbiter sessions do not load normal project extensions, skills, prompt templates, themes, or context files.
 - State writes use an expected revision; stale concurrent writes fail instead of silently overwriting.
-- An event committed immediately before a crash can recover its simulation turn without rerunning the LLM or applying the delta twice.
 - `current.json` can be deleted and reconstructed from `initial.json + events/*`.
+- Scene simulations cannot start when their deterministic entry gate is false.
+- Single-use choices cannot silently execute twice.
+- Quest state can be rebuilt entirely from state/event history.
+- Branches cannot bypass the target scene's own entry gate.
+- Timeline violations are deterministic diagnostics rather than prompt-only warnings.
 
 ## Test
 
@@ -138,10 +217,10 @@ npm test
 npm run check
 ```
 
-v0.3 regression coverage includes all v0.1/v0.2 boundaries plus StateDelta validation, initial-state validation, event replay, non-negative resource constraints, revision conflicts, Arbiter resolution semantics, and crash recovery.
+v0.4 regression coverage includes all previous epistemic/state boundaries plus predicate evaluation, scene gates, deterministic choice effects, single-use choices, branch resolution, derived quest state, timeline continuity/order checks, gameplay consequence persistence, and unified flow snapshots.
 
 ## Current limits
 
-v0.3 does **not** yet model quest/choice graphs, temporal ordering, generalized predicates, inventory item identity, spatial simulation, combat rules, branch conditions, localization, Unity export, or a GUI. The Arbiter is an LLM resolver constrained by deterministic schemas; it is not a full rules engine.
+v0.4 does **not** execute Unity/game-engine consequences, provide a stable export schema, model localization IDs, spatial/combat rules, quest timers, multiplayer authority, arbitrary scripting, or a graph authoring UI. `gameplayConsequences` are durable engine-facing descriptors only; v0.5 will define the export/acknowledgement layer.
 
-See `docs/MVP_V0.3.md`, `docs/STATE_ENGINE.md`, ADRs, and `docs/ROADMAP.md`.
+See `docs/MVP_V0.4.md`, `docs/GAME_SEMANTICS.md`, `docs/STATE_ENGINE.md`, ADRs, and `docs/ROADMAP.md`.

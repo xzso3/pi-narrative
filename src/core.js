@@ -185,11 +185,15 @@ export function canonizeDraft(projectRoot, sceneId, { approvedBy = "human" } = {
 }
 
 export function projectStatus(projectRoot) {
-  const dirs = ["characters", "scenes", "simulations", "events", "drafts", "canon"];
+  const dirs = ["characters", "scenes", "choices", "branches", "quests", "simulations", "events", "drafts", "canon"];
   const counts = {};
   for (const dir of dirs) {
     const full = narrativePath(projectRoot, dir);
     counts[dir] = fs.existsSync(full) ? fs.readdirSync(full).filter((x) => x.endsWith(".json")).length : 0;
   }
-  return { project: loadManifest(projectRoot), counts };
+  return {
+    project: loadManifest(projectRoot),
+    counts,
+    timeline: fs.existsSync(narrativePath(projectRoot, "timeline.json")),
+  };
 }

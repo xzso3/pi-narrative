@@ -58,3 +58,8 @@ Actor and Arbiter sessions are ephemeral and use a custom resource loader that d
 Simulation JSON stores resolved turns. Mutable world truth is reconstructed separately from `state/initial.json + events/*`.
 
 The runtime commits the deterministic turn event before the transcript update. If interrupted in between, the next run detects the existing event id and reconstructs the turn from its internal structured ActorResponse rather than invoking models or applying state a second time.
+
+
+## v0.4 scene gate integration
+
+Before a new simulation is created, `createSimulation()` evaluates the scene's deterministic `entryCondition`. A false gate rejects the simulation before any Actor child session starts. This prevents LLM orchestration from bypassing authored game-flow rules.

@@ -131,3 +131,16 @@ This is optimistic concurrency, not distributed locking. It is enough for the MV
 ## Crash recovery
 
 The event is written before the simulation transcript. A deterministic event id (`<simulation>-turn-<n>`) plus the private structured ActorResponse stored in the internal event allows the next run to reconstruct the missing simulation turn without invoking Actor/Arbiter again. Actor-facing replay still filters private fields.
+
+
+## v0.4 event sources
+
+NarrativeEvent now carries a typed `source` describing why the event exists:
+
+- `actor-turn` — Arbiter-resolved simulation behavior; retains simulation/turn/character identifiers for crash recovery.
+- `choice` — designer-authored player choice effect.
+- `system` — deterministic non-character/system transition.
+
+All three source types use the same revision chain and StateDelta validation. This lets game semantics reuse the event-sourced state engine without pretending every state change came from a character simulation.
+
+Choice events may additionally carry `gameplayConsequences[]`; these descriptors do not mutate narrative state by themselves.

@@ -10,9 +10,17 @@
     "mara": "Acquire at least ten liters without losing the medicine in her pack.",
     "oren": "Make Mara leave without discovering the hidden reserve."
   },
+  "entryCondition": { "op": "const", "value": true },
+  "exitCondition": {
+    "op": "any",
+    "conditions": [
+      { "op": "compare", "path": "world.flags.departedNorth", "comparator": "eq", "value": true },
+      { "op": "compare", "path": "world.flags.shelterAccepted", "comparator": "eq", "value": true }
+    ]
+  },
   "outcome": {
     "stateChanges": [
-      "To be decided after simulation and writing; this source scene is not canon."
+      "Resolved by simulation events and/or the authored departure choice."
     ]
   }
 }

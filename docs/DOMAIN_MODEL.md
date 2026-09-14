@@ -1,8 +1,8 @@
-# Domain model v0.3
+# Domain model v0.4
 
-The schema remains intentionally small, JSON-based, and reviewable in Git.
+The schema remains intentionally JSON-based, deterministic, and reviewable in Git.
 
-## Authored layer
+## Authored narrative layer
 
 ### Project
 
@@ -21,8 +21,7 @@ The schema remains intentionally small, JSON-based, and reviewable in Git.
 
 - identity / desire / fear
 - boundaries / speech
-- authored baseline current state
-- authored baseline relationships
+- authored baseline state/relationships
 - knowledge.factIds / privateFacts
 
 ### Scene
@@ -30,67 +29,108 @@ The schema remains intentionally small, JSON-based, and reviewable in Git.
 - id/title/location/situation
 - cast[]
 - publicFactIds[] / publicEvents[]
-- actorGoals{characterId: goal}
-- outcome.stateChanges[]
+- actorGoals{}
+- optional `entryCondition`
+- optional `exitCondition`
+- outcome metadata
 
-## Runtime layer
+## Runtime simulation layer
 
 ### ActorResponse
 
-Private simulation record:
-
-- `intent`
-- `action` — attempted externally observable action; not guaranteed world truth
+- `intent` — private
+- `action` — attempted externally observable action
 - optional `dialogue`
-- optional `rationale`
-- optional `emotionalShift`
+- optional `rationale` — private
+- optional `emotionalShift` — private
 
 ### ArbiterDecision
 
 - `outcome`: `accepted | rejected | partial`
 - `observableResult`
-- optional internal `reason`
+- optional private `reason`
 - `deltas[]`
 
 ### StateDelta
-
-v0.3 types:
 
 - `resource`
 - `relationship`
 - `knowledge`
 - `state`
 
-See `STATE_ENGINE.md` for constraints.
-
 ### NarrativeEvent
 
-- id / simulationId / turn / characterId
-- revisionBefore / revisionAfter
-- outcome / observableResult
-- optional reason
-- internal privateActorResponse for crash recovery
-- validated deltas[]
-- createdAt
+v0.4 adds a typed `source`:
+
+- `actor-turn`
+- `choice`
+- `system`
+
+Events also contain revision bounds, observable result, validated deltas, optional private Actor recovery data, and optional `gameplayConsequences[]`.
 
 ### Mutable Narrative State
 
 - protocol / revision
 - characters{id: attributes/resources/relationships/knowledge}
-- world.flags (public mutable world state in v0.3)
+- world.flags
 
-`state/initial.json` is revision zero. `events/*` derive every later revision.
+`state/initial.json + events/*` remains authoritative.
 
-### Simulation
+## Game semantics layer
 
-A non-canon record containing turn order, lifecycle status, private ActorResponse data, and each turn's resolved event reference. Public replay filters private fields.
+### Condition
+
+Declarative predicate tree using:
+
+- `const`
+- `all`
+- `any`
+- `not`
+- `compare`
+- `event`
+
+### Choice
+
+- id / sceneId / prompt
+- singleUse
+- availableWhen
+- options[]
+  - id / label
+  - availableWhen
+  - outcomeText
+  - deltas[]
+  - gameplayConsequences[]
+
+### BranchRule
+
+- id
+- fromSceneId
+- targetSceneId
+- priority
+- when
+
+### Quest
+
+- id / title
+- availableWhen / failWhen / completeWhen
+- objectives[]
+  - id / title
+  - dependsOn[]
+  - availableWhen / completeWhen / failWhen
+
+Quest/objective status is derived as `locked | active | completed | failed`.
+
+### TimelineConstraint
+
+- `condition-requires`
+- `event-before`
+
+### GameplayConsequence
+
+An engine-agnostic descriptor persisted on semantic events. v0.4 records/exposes these but does not execute them.
 
 ## Production layer
 
-### Draft
+### Draft / Canon
 
-Uses the Scene-compatible shape for now. Future versions will add explicit beats, choices, predicates, quest transitions, and localization IDs.
-
-### Canon
-
-A validated draft plus `canon.status`, `approvedBy`, and `approvedAt`. Mutable runtime state does not automatically modify canon.
+Draft and Canon remain authored script outputs. Mutable runtime state and game-flow semantics do not automatically become approved canon.
