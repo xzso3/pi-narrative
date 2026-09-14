@@ -2,6 +2,7 @@ import {
   createAgentSession,
   DefaultResourceLoader,
   defineTool,
+  getAgentDir,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
@@ -18,6 +19,7 @@ function actorSystemPrompt(context: unknown) {
   return [
     "You are one Actor inside a game-narrative simulation, not the author or director.",
     "The JSON context below is your complete epistemic world. Information absent from it does not exist for you.",
+    "When authored character data and mutableState differ, mutableState is the current truth.",
     "Never optimize for plot progression. Pursue the character's immediate goal plausibly.",
     "Do not narrate author plans or infer other characters' private thoughts.",
     "You MUST finish by calling submit_actor_response exactly once. Do not answer with free-form prose.",
@@ -42,6 +44,13 @@ export async function runActorWithPi({ projectRoot, context, model, signal }: an
 
   const loader = new DefaultResourceLoader({
     cwd: projectRoot,
+    agentDir: getAgentDir(),
+    noExtensions: true,
+    noSkills: true,
+    noPromptTemplates: true,
+    noThemes: true,
+    noContextFiles: true,
+    appendSystemPromptOverride: () => [],
     systemPromptOverride: () => actorSystemPrompt(context),
   });
   await loader.reload();
@@ -52,7 +61,7 @@ export async function runActorWithPi({ projectRoot, context, model, signal }: an
     noTools: "builtin",
     customTools: [submit],
     resourceLoader: loader,
-    sessionManager: SessionManager.inMemory(projectRoot),
+    sessionManager: SessionManager.inMemory(),
   });
 
   try {

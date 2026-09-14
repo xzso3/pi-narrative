@@ -1,0 +1,21 @@
+{
+  "protocol": "pi-narrative.state/v0.3",
+  "revision": 0,
+  "characters": {
+    "mara": {
+      "attributes": { "fatigue": 0.62 },
+      "resources": { "fuelLiters": 2, "medicineDoses": 1 },
+      "relationships": { "oren": { "trust": 0.15 } },
+      "knowledge": { "factIds": ["bridge-rumor"] }
+    },
+    "oren": {
+      "attributes": { "fatigue": 0.44 },
+      "resources": { "fuelLiters": 35 },
+      "relationships": { "mara": { "trust": 0.08 } },
+      "knowledge": { "factIds": ["underground-reserve"] }
+    }
+  },
+  "world": {
+    "flags": { "dustStormApproaching": true }
+  }
+}

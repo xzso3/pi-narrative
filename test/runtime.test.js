@@ -80,3 +80,65 @@ test("runNextTurn supports replay/resume from persisted transcript", async () =>
   assert.equal(replay.transcript.length, 2);
   assert.equal(replay.privateTurns.length, 2);
 });
+
+import { commitNarrativeEvent } from "../src/state-engine.js";
+import { runNextResolvedTurn } from "../src/runtime.js";
+
+test("resolved turns treat Actor action as attempt and Arbiter result as world truth", async () => {
+  const root = tmpProject();
+  const sim = createSimulation(root, "fuel-bargain", { id: "resolved", maxTurns: 2 });
+  const actorRunner = async ({ characterId }) => ({
+    intent: "secure fuel",
+    action: "takes five liters from Oren's stock",
+    dialogue: "Five liters. Fair?",
+    rationale: "Needs enough to move.",
+  });
+  const arbiterRunner = async () => ({
+    outcome: "accepted",
+    observableResult: "Oren unlocks the pump and five liters flow into Mara's tank.",
+    reason: "Oren permits the transfer.",
+    deltas: [
+      { type: "resource", characterId: "oren", resourceId: "fuelLiters", op: "increment", value: -5 },
+      { type: "resource", characterId: "mara", resourceId: "fuelLiters", op: "increment", value: 5 }
+    ]
+  });
+
+  const result = await runNextResolvedTurn(root, sim.id, actorRunner, arbiterRunner);
+  assert.equal(result.turn.resolution.outcome, "accepted");
+  assert.equal(result.state.characters.mara.resources.fuelLiters, 7);
+  assert.equal(result.state.characters.oren.resources.fuelLiters, 30);
+
+  const nextContext = buildActorTurnContext(root, loadSimulation(root, sim.id));
+  const visible = JSON.stringify(nextContext.simulation.perceivedHistory);
+  assert.match(visible, /five liters flow/);
+  assert.match(visible, /takes five liters/);
+  assert.doesNotMatch(visible, /Needs enough to move/);
+  assert.doesNotMatch(visible, /Oren permits the transfer/);
+  assert.equal(nextContext.mutableState.revision, 1);
+});
+
+test("resolved turn can recover from event committed before simulation transcript", async () => {
+  const root = tmpProject();
+  const sim = createSimulation(root, "fuel-bargain", { id: "recover", maxTurns: 1 });
+  const actorResponse = { intent: "wait", action: "holds out an empty fuel can" };
+  commitNarrativeEvent(root, {
+    id: "recover-turn-1",
+    simulationId: "recover",
+    turn: 1,
+    characterId: "mara",
+    baseRevision: 0,
+    actorResponse,
+    decision: { outcome: "rejected", observableResult: "Oren does not open the pump.", deltas: [] }
+  });
+  let called = false;
+  const result = await runNextResolvedTurn(
+    root,
+    sim.id,
+    async () => { called = true; throw new Error("actor should not run"); },
+    async () => { called = true; throw new Error("arbiter should not run"); },
+  );
+  assert.equal(called, false);
+  assert.equal(result.recovered, true);
+  assert.equal(result.turn.resolution.observableResult, "Oren does not open the pump.");
+  assert.equal(result.simulation.status, "completed");
+});

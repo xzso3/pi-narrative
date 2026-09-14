@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 - 2026-09-15
+
+Narrative State Engine MVP:
+- Added typed resource, relationship, knowledge, and state deltas.
+- Added independent Pi Arbiter child sessions; Actor actions are attempts, not world truth.
+- Added append-only revisioned NarrativeEvent log and deterministic state replay.
+- Added revision conflict detection and rebuildable `state/current.json` cache.
+- Added event-before-transcript crash recovery without duplicate model execution or state mutation.
+- Added initial-state validation so author-only facts cannot enter mutable character knowledge.
+- Hardened Actor and Arbiter child sessions by disabling project extensions, skills, prompt templates, themes, context files, and appended system prompts.
+- Added `/narrative-state`, `narrative_state`, and `narrative_event_log`.
+- Added Narrative Arbiter skill, state-engine documentation, and ADRs.
+
 ## 0.2.0 - 2026-09-15
 
 Actor Runtime MVP:
