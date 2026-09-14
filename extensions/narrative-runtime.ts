@@ -11,10 +11,12 @@ import {
 import {
   createSimulation,
   loadSimulation,
-  runNextTurn,
+  runNextResolvedTurn,
   simulationReplay,
 } from "../src/runtime.js";
+import { listNarrativeEvents, loadNarrativeState } from "../src/state-engine.js";
 import { runActorWithPi } from "../src/pi-actor-runner.js";
+import { runArbiterWithPi } from "../src/pi-arbiter-runner.js";
 
 function root(input?: string) {
   return path.resolve(input || process.cwd());
@@ -80,7 +82,7 @@ export default function narrativeRuntime(pi: ExtensionAPI) {
   pi.registerTool({
     name: "narrative_start_simulation",
     label: "Start Narrative Simulation",
-    description: "Create a resumable v0.2 scene simulation with round-robin Actor turns.",
+    description: "Create a resumable v0.3 scene simulation with round-robin Actor turns and Arbiter resolution.",
     parameters: Type.Object({
       sceneId: Type.String(),
       id: Type.Optional(Type.String()),
@@ -95,15 +97,18 @@ export default function narrativeRuntime(pi: ExtensionAPI) {
   pi.registerTool({
     name: "narrative_simulate_next_turn",
     label: "Simulate Next Actor Turn",
-    description: "Run exactly one isolated Actor child session, append the structured response, and persist the simulation for replay/resume.",
+    description: "Run one isolated Actor session, resolve its attempted action through an isolated Arbiter, apply validated state deltas, and persist the turn.",
     parameters: Type.Object({
       simulationId: Type.String(),
       projectRoot: Type.Optional(Type.String()),
     }),
     async execute(_id, params, signal, _onUpdate, ctx) {
       const projectRoot = root(params.projectRoot);
-      const value = await runNextTurn(projectRoot, params.simulationId, ({ context }) =>
-        runActorWithPi({ projectRoot, context, model: ctx.model, signal }),
+      const value = await runNextResolvedTurn(
+        projectRoot,
+        params.simulationId,
+        ({ context }) => runActorWithPi({ projectRoot, context, model: ctx.model, signal }),
+        ({ context }) => runArbiterWithPi({ projectRoot, context, model: ctx.model, signal }),
       );
       return result(value);
     },
@@ -119,6 +124,26 @@ export default function narrativeRuntime(pi: ExtensionAPI) {
     }),
     async execute(_id, params) {
       return result(simulationReplay(root(params.projectRoot), params.simulationId));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_state",
+    label: "Narrative Mutable State",
+    description: "Read the replayed mutable narrative state. Event log is the source of truth; current.json is only a cache.",
+    parameters: Type.Object({ projectRoot: Type.Optional(Type.String()) }),
+    async execute(_id, params) {
+      return result(loadNarrativeState(root(params.projectRoot)));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_event_log",
+    label: "Narrative Event Log",
+    description: "Read deterministic world-state events produced by the Arbiter.",
+    parameters: Type.Object({ projectRoot: Type.Optional(Type.String()) }),
+    async execute(_id, params) {
+      return result(listNarrativeEvents(root(params.projectRoot)));
     },
   });
 
@@ -157,13 +182,25 @@ export default function narrativeRuntime(pi: ExtensionAPI) {
       const simulation = createSimulation(projectRoot, sceneId, { maxTurns });
       ctx.ui.notify(`Simulation '${simulation.id}' started.`, "info");
       while (loadSimulation(projectRoot, simulation.id).status === "running") {
-        await runNextTurn(projectRoot, simulation.id, ({ context }) =>
-          runActorWithPi({ projectRoot, context, model: ctx.model }),
+        await runNextResolvedTurn(
+          projectRoot,
+          simulation.id,
+          ({ context }) => runActorWithPi({ projectRoot, context, model: ctx.model }),
+          ({ context }) => runArbiterWithPi({ projectRoot, context, model: ctx.model }),
         );
       }
       const replay = simulationReplay(projectRoot, simulation.id);
       ctx.ui.notify(`Simulation '${simulation.id}' completed with ${replay.transcript.length} turns.`, "info");
       pi.sendMessage({ customType: "pi-narrative-simulation", content: JSON.stringify(replay, null, 2), display: true });
+    },
+  });
+
+  pi.registerCommand("narrative-state", {
+    description: "Show current replayed narrative state",
+    handler: async (_args, ctx) => {
+      const state = loadNarrativeState(process.cwd());
+      pi.sendMessage({ customType: "pi-narrative-state", content: JSON.stringify(state, null, 2), display: true });
+      ctx.ui.notify(`Narrative state revision ${state.revision}.`, "info");
     },
   });
 

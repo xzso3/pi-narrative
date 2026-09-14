@@ -40,3 +40,11 @@ test("canonization is explicit and refuses overwrite", () => {
   assert.equal(canon.canon.status, "approved");
   assert.throws(() => canonizeDraft(tmp, "fuel-bargain"), /already exists/);
 });
+
+
+test("unsafe ids are rejected before filesystem access", () => {
+  assert.throws(() => buildActorContext(fixture, "../mara", "fuel-bargain"), /Character id/);
+  const validation = validateScene(fixture, "../../secret");
+  assert.equal(validation.valid, false);
+  assert.ok(validation.errors.some((error) => error.includes("Scene id")));
+});

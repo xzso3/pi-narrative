@@ -10,6 +10,9 @@ for (const file of [
   "skills/narrative-director/SKILL.md",
   "skills/scene-writer/SKILL.md",
   "skills/narrative-reviewer/SKILL.md",
+  "skills/narrative-arbiter/SKILL.md",
+  "src/state-engine.js",
+  "src/pi-arbiter-runner.ts",
 ]) {
   if (!fs.existsSync(new URL(`../${file}`, import.meta.url))) throw new Error(`Missing ${file}`);
 }

@@ -1,49 +1,96 @@
-# Domain model v0.1
+# Domain model v0.3
 
-This schema is intentionally small and JSON-based.
+The schema remains intentionally small, JSON-based, and reviewable in Git.
 
-## Project
+## Authored layer
+
+### Project
 
 - `schemaVersion`
 - `id`
 - `title`
 - `sceneOrder[]`
 
-## WorldFact
+### WorldFact
 
 - `id`
 - `text`
-- `actorVisible` — hard filter for author-only information
+- `actorVisible` — hard boundary for author-only facts
 
-## Character
+### Character
 
-- identity
-- desire
-- fear
-- boundaries
-- speech
-- currentState
-- relationships
-- knowledge.factIds
-- knowledge.privateFacts
+- identity / desire / fear
+- boundaries / speech
+- authored baseline current state
+- authored baseline relationships
+- knowledge.factIds / privateFacts
 
-## Scene
+### Scene
 
 - id/title/location/situation
 - cast[]
-- publicFactIds[]
-- publicEvents[]
+- publicFactIds[] / publicEvents[]
 - actorGoals{characterId: goal}
 - outcome.stateChanges[]
 
-## Simulation
+## Runtime layer
 
-A non-canon record of roleplay turns. Each turn captures `characterId`, `intent`, `action`, and optional `dialogue`.
+### ActorResponse
 
-## Draft
+Private simulation record:
 
-Uses the Scene shape in v0.1 to keep promotion simple. Later versions may separate authored script beats, game choices, conditions, and localization keys.
+- `intent`
+- `action` — attempted externally observable action; not guaranteed world truth
+- optional `dialogue`
+- optional `rationale`
+- optional `emotionalShift`
 
-## Canon
+### ArbiterDecision
 
-A validated draft plus `canon.status`, `approvedBy`, and `approvedAt`.
+- `outcome`: `accepted | rejected | partial`
+- `observableResult`
+- optional internal `reason`
+- `deltas[]`
+
+### StateDelta
+
+v0.3 types:
+
+- `resource`
+- `relationship`
+- `knowledge`
+- `state`
+
+See `STATE_ENGINE.md` for constraints.
+
+### NarrativeEvent
+
+- id / simulationId / turn / characterId
+- revisionBefore / revisionAfter
+- outcome / observableResult
+- optional reason
+- internal privateActorResponse for crash recovery
+- validated deltas[]
+- createdAt
+
+### Mutable Narrative State
+
+- protocol / revision
+- characters{id: attributes/resources/relationships/knowledge}
+- world.flags (public mutable world state in v0.3)
+
+`state/initial.json` is revision zero. `events/*` derive every later revision.
+
+### Simulation
+
+A non-canon record containing turn order, lifecycle status, private ActorResponse data, and each turn's resolved event reference. Public replay filters private fields.
+
+## Production layer
+
+### Draft
+
+Uses the Scene-compatible shape for now. Future versions will add explicit beats, choices, predicates, quest transitions, and localization IDs.
+
+### Canon
+
+A validated draft plus `canon.status`, `approvedBy`, and `approvedAt`. Mutable runtime state does not automatically modify canon.

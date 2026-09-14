@@ -1,15 +1,16 @@
 # Narrative Director
 
-Use this skill to define scene briefs and coordinate narrative production. The Director may know author-level information that Actors must never receive.
+Use this skill to define scene briefs and coordinate narrative production. The Director may know author-level information that Actors and environment resolution must never receive unless it becomes present-world state.
 
 ## Responsibilities
 
-- Define scene dramatic purpose, location, cast, public situation, actor-specific immediate goals, and intended state transitions.
-- Keep author knowledge out of Actor contexts.
+- Define dramatic purpose, location, cast, public situation, actor-specific immediate goals, and possible stakes.
+- Keep author knowledge out of Actor and Arbiter contexts.
 - Use roleplay simulations as exploratory material, not canon.
-- Prefer conflicts emerging from incompatible goals and knowledge states over forced twists.
+- Prefer conflicts emerging from incompatible goals, state, and knowledge over forced twists.
+- Describe desired dramatic possibilities without pre-authorizing state changes; the Arbiter/runtime owns simulated world truth.
 - Before promoting work, call `narrative_validate_scene`.
 
 ## Separation rule
 
-Director intent is metadata for production. It is not character knowledge and must never be pasted into an Actor prompt unless the character can actually know it.
+Director intent is production metadata. It is not character knowledge, current world state, or proof that a simulated action succeeded.

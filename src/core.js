@@ -3,6 +3,14 @@ import path from "node:path";
 
 export const NARRATIVE_DIR = "narrative";
 
+
+export function assertSafeId(id, label = "Id") {
+  if (typeof id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id)) {
+    throw new Error(`${label} may contain only letters, numbers, dot, underscore, and hyphen.`);
+  }
+  return id;
+}
+
 export function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
@@ -23,10 +31,13 @@ export function loadManifest(projectRoot) {
 }
 
 export function loadCharacter(projectRoot, characterId) {
+  assertSafeId(characterId, "Character id");
   return readJson(narrativePath(projectRoot, "characters", `${characterId}.json`));
 }
 
 export function loadScene(projectRoot, sceneId, source = "scenes") {
+  assertSafeId(sceneId, "Scene id");
+  if (!['scenes', 'drafts', 'canon'].includes(source)) throw new Error(`Unsupported scene source '${source}'.`);
   return readJson(narrativePath(projectRoot, source, `${sceneId}.json`));
 }
 
@@ -134,6 +145,7 @@ export function recordSimulation(projectRoot, simulation) {
   if (!simulation?.sceneId || !simulation?.id || !Array.isArray(simulation.turns)) {
     throw new Error("Simulation requires id, sceneId, and turns[].");
   }
+  assertSafeId(simulation.id, "Simulation id");
   const sceneValidation = validateScene(projectRoot, simulation.sceneId);
   if (!sceneValidation.valid) {
     throw new Error(`Cannot record simulation for invalid scene: ${sceneValidation.errors.join("; ")}`);
@@ -173,7 +185,7 @@ export function canonizeDraft(projectRoot, sceneId, { approvedBy = "human" } = {
 }
 
 export function projectStatus(projectRoot) {
-  const dirs = ["characters", "scenes", "simulations", "drafts", "canon"];
+  const dirs = ["characters", "scenes", "simulations", "events", "drafts", "canon"];
   const counts = {};
   for (const dir of dirs) {
     const full = narrativePath(projectRoot, dir);

@@ -16,24 +16,35 @@
 - Public/private transcript separation.
 - Simulation replay and resume.
 
-## v0.3 — Narrative state engine
+## v0.3 — Narrative State Engine ✅
 
-- Explicit typed events and state deltas.
-- Relationship and knowledge changes.
-- Director/Environment arbitration of proposed effects.
-- Timeline and continuity rules.
-- Revision-safe canon semantics.
+- Actor action is an attempt; Arbiter owns world truth.
+- Typed resource/relationship/knowledge/state deltas.
+- Append-only revisioned NarrativeEvent log.
+- Deterministic replay and rebuildable current-state cache.
+- Optimistic revision conflict detection.
+- Event-before-transcript crash recovery.
+- Resource-isolated Actor and Arbiter child sessions.
 
-## v0.4 — Game narrative layer
+## v0.4 — Game narrative semantics
 
-- Choices, conditions, branches, quest state.
-- Gameplay consequences.
-- Localization IDs.
-- Unity-friendly export format.
+- Conditions and predicates over mutable state.
+- Player choices and branch transitions.
+- Quest/objective state machines.
+- Timeline ordering and continuity constraints.
+- Explicit gameplay consequences.
+- Scene entry/exit conditions.
 
-## v0.5 — Authoring UX
+## v0.5 — Engine/export layer
+
+- Stable external schema and localization IDs.
+- Unity-friendly export/import package.
+- Validation report suitable for CI.
+- Snapshot/checkpoint strategy for long event logs.
+
+## v0.6 — Authoring UX
 
 - Narrative dashboard / graph view.
-- Scene diff/review UI.
-- Character knowledge inspector.
-- Potential Pi SDK/RPC-backed GUI.
+- Scene and event diff/review UI.
+- Character knowledge/state inspector.
+- Pi SDK/RPC-backed authoring application.
