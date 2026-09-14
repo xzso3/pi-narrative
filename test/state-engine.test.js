@@ -91,3 +91,18 @@ test("rejected actions cannot mutate state and revision conflicts are rejected",
     decision: { outcome: "accepted", observableResult: "Nothing durable changes.", deltas: [] }
   }), /revision conflict/);
 });
+
+test("compound deltas validate sequentially and cannot bypass resource bounds", () => {
+  const root = tmpProject();
+  const state = loadNarrativeState(root);
+  const invalid = validateArbiterDecision(root, state, {
+    outcome: "accepted",
+    observableResult: "Two withdrawals are attempted.",
+    deltas: [
+      { type: "resource", characterId: "mara", resourceId: "fuelLiters", op: "increment", value: -2 },
+      { type: "resource", characterId: "mara", resourceId: "fuelLiters", op: "increment", value: -1 }
+    ]
+  });
+  assert.equal(invalid.valid, false);
+  assert.ok(invalid.errors.some((error) => error.includes("cannot become negative")));
+});

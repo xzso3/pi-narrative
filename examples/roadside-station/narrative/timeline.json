@@ -1,0 +1,11 @@
+{
+  "protocol": "pi-narrative.timeline/v0.4",
+  "constraints": [
+    {
+      "id": "fuel-before-north",
+      "type": "condition-requires",
+      "when": { "op": "compare", "path": "world.flags.departedNorth", "comparator": "eq", "value": true },
+      "mustHave": { "op": "compare", "path": "characters.mara.resources.fuelLiters", "comparator": "gte", "value": 10 }
+    }
+  ]
+}

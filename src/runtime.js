@@ -6,9 +6,10 @@ import {
   findNarrativeEvent,
   loadNarrativeState,
 } from "./state-engine.js";
+import { evaluateSceneGate } from "./semantics.js";
 
-export const ACTOR_RESPONSE_PROTOCOL = "pi-narrative.actor-response/v0.3";
-export const SIMULATION_PROTOCOL = "pi-narrative.simulation/v0.3";
+export const ACTOR_RESPONSE_PROTOCOL = "pi-narrative.actor-response/v0.4";
+export const SIMULATION_PROTOCOL = "pi-narrative.simulation/v0.4";
 
 export function validateActorResponse(response) {
   const errors = [];
@@ -46,7 +47,7 @@ export function buildActorTurnContext(projectRoot, simulation) {
   if (!characterId) throw new Error("Simulation has no next actor.");
   const base = buildActorContext(projectRoot, characterId, simulation.sceneId);
   return {
-    protocol: "pi-narrative.actor-turn-context/v0.3",
+    protocol: "pi-narrative.actor-turn-context/v0.4",
     ...base,
     mutableState: actorMutableStateView(projectRoot, characterId),
     simulation: {
@@ -69,7 +70,7 @@ export function buildArbiterContext(projectRoot, simulation, characterId, respon
   const scene = loadScene(projectRoot, simulation.sceneId);
   const state = loadNarrativeState(projectRoot);
   return {
-    protocol: "pi-narrative.arbiter-context/v0.3",
+    protocol: "pi-narrative.arbiter-context/v0.4",
     simulation: { id: simulation.id, turn: simulation.turns.length + 1, sceneId: simulation.sceneId },
     scene: {
       id: scene.id,
@@ -95,6 +96,8 @@ export function buildArbiterContext(projectRoot, simulation, characterId, respon
 export function createSimulation(projectRoot, sceneId, options = {}) {
   const check = validateScene(projectRoot, sceneId);
   if (!check.valid) throw new Error(`Cannot start invalid scene: ${check.errors.join("; ")}`);
+  const gate = evaluateSceneGate(projectRoot, sceneId);
+  if (!gate.entry) throw new Error(`Cannot start scene '${sceneId}': entry condition is not satisfied.`);
   const scene = loadScene(projectRoot, sceneId);
   const maxTurns = Number.isInteger(options.maxTurns) && options.maxTurns > 0 ? options.maxTurns : Math.max(scene.cast.length * 3, 1);
   const id = options.id || `${sceneId}-${Date.now()}`;

@@ -35,3 +35,19 @@ Made `initial.json + events/*` authoritative and `current.json` rebuildable. Add
 ## 2026-09-15 — Child-session hardening
 
 Cross-checked current Pi SDK resource-loader behavior and disabled extensions, skills, prompt templates, themes, context files, and appended system prompts in Actor/Arbiter sessions. Each child session exposes only its structured submit tool.
+
+## 2026-09-15 — v0.4 declarative predicate layer
+
+Added a harness-independent predicate evaluator over replayed state and durable event history. Conditions are data-only JSON; no arbitrary code evaluation is permitted.
+
+## 2026-09-15 — authored choice authority
+
+Added deterministic player choices whose authored StateDelta effects commit directly through the State Engine. Choice events have a first-class `source.type = choice` identity and may carry engine-facing gameplay consequence descriptors.
+
+## 2026-09-15 — derived game flow
+
+Added scene entry/exit gates, branch rules, derived quest/objective status, timeline continuity/order constraints, and a unified flow snapshot. Scene simulation creation now rejects locked entry gates.
+
+## 2026-09-15 — Roadside Station branching demo
+
+Expanded the fixture into two routes: trade medicine for fuel and leave north, or accept shelter. Added gated target scenes, branch definitions, a quest, timeline invariant, and persisted gameplay consequences.

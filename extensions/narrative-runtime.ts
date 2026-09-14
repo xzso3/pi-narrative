@@ -15,6 +15,19 @@ import {
   simulationReplay,
 } from "../src/runtime.js";
 import { listNarrativeEvents, loadNarrativeState } from "../src/state-engine.js";
+import {
+  applyChoice,
+  availableChoices,
+  evaluateChoice,
+  evaluateCondition,
+  evaluateQuest,
+  evaluateQuests,
+  evaluateSceneGate,
+  evaluateTimeline,
+  gameplayConsequences,
+  narrativeFlowSnapshot,
+  resolveBranches,
+} from "../src/semantics.js";
 import { runActorWithPi } from "../src/pi-actor-runner.js";
 import { runArbiterWithPi } from "../src/pi-arbiter-runner.js";
 
@@ -82,7 +95,7 @@ export default function narrativeRuntime(pi: ExtensionAPI) {
   pi.registerTool({
     name: "narrative_start_simulation",
     label: "Start Narrative Simulation",
-    description: "Create a resumable v0.3 scene simulation with round-robin Actor turns and Arbiter resolution.",
+    description: "Create a resumable v0.4 scene simulation after deterministic scene-entry gate evaluation.",
     parameters: Type.Object({
       sceneId: Type.String(),
       id: Type.Optional(Type.String()),
@@ -148,6 +161,120 @@ export default function narrativeRuntime(pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "narrative_evaluate_condition",
+    label: "Evaluate Narrative Condition",
+    description: "Evaluate a declarative v0.4 predicate against replayed narrative state and event history. No arbitrary code is executed.",
+    parameters: Type.Object({
+      condition: Type.Any(),
+      projectRoot: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params) {
+      return result(evaluateCondition(root(params.projectRoot), params.condition));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_scene_gate",
+    label: "Narrative Scene Gate",
+    description: "Evaluate deterministic entry/exit conditions for a scene.",
+    parameters: Type.Object({
+      sceneId: Type.String(),
+      projectRoot: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params) {
+      return result(evaluateSceneGate(root(params.projectRoot), params.sceneId));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_choices",
+    label: "Narrative Choices",
+    description: "List currently available authored player choices, optionally scoped to one scene.",
+    parameters: Type.Object({
+      sceneId: Type.Optional(Type.String()),
+      projectRoot: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params) {
+      return result(availableChoices(root(params.projectRoot), { sceneId: params.sceneId }));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_apply_choice",
+    label: "Apply Narrative Choice",
+    description: "Apply one explicitly selected authored choice option as a deterministic revisioned NarrativeEvent. Never choose autonomously. This mutates narrative state and requires the caller's expected revision.",
+    parameters: Type.Object({
+      choiceId: Type.String(),
+      optionId: Type.String(),
+      expectedRevision: Type.Integer({ minimum: 0 }),
+      projectRoot: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params) {
+      return result(applyChoice(root(params.projectRoot), params.choiceId, params.optionId, { expectedRevision: params.expectedRevision }));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_quests",
+    label: "Narrative Quest State",
+    description: "Derive quest and objective states from current predicates. Quest state is not stored separately.",
+    parameters: Type.Object({
+      questId: Type.Optional(Type.String()),
+      projectRoot: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params) {
+      const projectRoot = root(params.projectRoot);
+      return result(params.questId ? evaluateQuest(projectRoot, params.questId) : evaluateQuests(projectRoot));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_branches",
+    label: "Narrative Branches",
+    description: "Resolve currently available branch targets from a scene, including target scene-entry gates.",
+    parameters: Type.Object({
+      fromSceneId: Type.String(),
+      projectRoot: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params) {
+      return result(resolveBranches(root(params.projectRoot), params.fromSceneId));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_timeline",
+    label: "Narrative Timeline Constraints",
+    description: "Evaluate event-order and state-continuity constraints against current history.",
+    parameters: Type.Object({ projectRoot: Type.Optional(Type.String()) }),
+    async execute(_id, params) {
+      return result(evaluateTimeline(root(params.projectRoot)));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_gameplay_consequences",
+    label: "Narrative Gameplay Consequences",
+    description: "List engine-facing gameplay consequence descriptors emitted by semantic events.",
+    parameters: Type.Object({ projectRoot: Type.Optional(Type.String()) }),
+    async execute(_id, params) {
+      return result(gameplayConsequences(root(params.projectRoot)));
+    },
+  });
+
+  pi.registerTool({
+    name: "narrative_flow",
+    label: "Narrative Flow Snapshot",
+    description: "Return a deterministic snapshot of scene gates, choices, quests, branches, timeline constraints, and gameplay consequences.",
+    parameters: Type.Object({
+      sceneId: Type.Optional(Type.String()),
+      projectRoot: Type.Optional(Type.String()),
+    }),
+    async execute(_id, params) {
+      return result(narrativeFlowSnapshot(root(params.projectRoot), { sceneId: params.sceneId }));
+    },
+  });
+
+  pi.registerTool({
     name: "narrative_status",
     label: "Narrative Project Status",
     description: "Summarize the current narrative project and counts of source, simulation, draft, and canon assets.",
@@ -201,6 +328,73 @@ export default function narrativeRuntime(pi: ExtensionAPI) {
       const state = loadNarrativeState(process.cwd());
       pi.sendMessage({ customType: "pi-narrative-state", content: JSON.stringify(state, null, 2), display: true });
       ctx.ui.notify(`Narrative state revision ${state.revision}.`, "info");
+    },
+  });
+
+  pi.registerCommand("narrative-flow", {
+    description: "Show deterministic game-narrative flow: /narrative-flow [scene-id]",
+    handler: async (args, ctx) => {
+      const sceneId = args.trim() || undefined;
+      const snapshot = narrativeFlowSnapshot(process.cwd(), { sceneId });
+      pi.sendMessage({ customType: "pi-narrative-flow", content: JSON.stringify(snapshot, null, 2), display: true });
+      ctx.ui.notify(`Narrative flow at state revision ${snapshot.stateRevision}.`, "info");
+    },
+  });
+
+  pi.registerCommand("choices", {
+    description: "List currently available choices: /choices [scene-id]",
+    handler: async (args, ctx) => {
+      const sceneId = args.trim() || undefined;
+      const choices = availableChoices(process.cwd(), { sceneId });
+      pi.sendMessage({ customType: "pi-narrative-choices", content: JSON.stringify(choices, null, 2), display: true });
+      ctx.ui.notify(`${choices.length} choice(s) currently available.`, "info");
+    },
+  });
+
+  pi.registerCommand("choose", {
+    description: "Apply an authored player choice: /choose <choice-id> <option-id>",
+    handler: async (args, ctx) => {
+      const [choiceId, optionId] = args.trim().split(/\s+/);
+      if (!choiceId || !optionId) {
+        ctx.ui.notify("Usage: /choose <choice-id> <option-id>", "error");
+        return;
+      }
+      const choice = evaluateChoice(process.cwd(), choiceId);
+      const option = choice.options.find((item) => item.id === optionId);
+      if (!choice.available || !option?.available) {
+        ctx.ui.notify(`Choice option '${choiceId}/${optionId}' is not currently available.`, "error");
+        return;
+      }
+      const state = loadNarrativeState(process.cwd());
+      const ok = await ctx.ui.confirm(
+        "Apply narrative choice?",
+        `Apply '${choiceId}/${optionId}' at state revision ${state.revision}? This appends an authoritative event.`,
+      );
+      if (!ok) {
+        ctx.ui.notify("Choice cancelled.", "info");
+        return;
+      }
+      const applied = applyChoice(process.cwd(), choiceId, optionId, { expectedRevision: state.revision });
+      pi.sendMessage({ customType: "pi-narrative-choice", content: JSON.stringify(applied, null, 2), display: true });
+      ctx.ui.notify(`Choice '${choiceId}/${optionId}' applied at revision ${applied.state.revision}.`, "info");
+    },
+  });
+
+  pi.registerCommand("quests", {
+    description: "Show derived quest/objective states",
+    handler: async (_args, ctx) => {
+      const quests = evaluateQuests(process.cwd());
+      pi.sendMessage({ customType: "pi-narrative-quests", content: JSON.stringify(quests, null, 2), display: true });
+      ctx.ui.notify(`${quests.length} quest(s) evaluated.`, "info");
+    },
+  });
+
+  pi.registerCommand("timeline", {
+    description: "Evaluate narrative timeline/continuity constraints",
+    handler: async (_args, ctx) => {
+      const timeline = evaluateTimeline(process.cwd());
+      pi.sendMessage({ customType: "pi-narrative-timeline", content: JSON.stringify(timeline, null, 2), display: true });
+      ctx.ui.notify(timeline.valid ? "Timeline constraints satisfied/pending." : "Timeline constraint violation detected.", timeline.valid ? "info" : "error");
     },
   });
 

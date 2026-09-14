@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 - 2026-09-15
+
+Game Narrative Semantics MVP:
+- Added declarative state/event predicates with no arbitrary code execution.
+- Added deterministic scene entry/exit gates and enforced entry gates before simulation creation.
+- Added authored player choices with option availability, single-use policy, validated StateDelta effects, and revision checks.
+- Added first-class choice/system NarrativeEvent sources while preserving actor-turn recovery fields.
+- Added branch resolution that also enforces target scene entry gates.
+- Added derived quest/objective state machines with ordered dependencies.
+- Added `condition-requires` and `event-before` timeline/continuity constraints.
+- Added persisted engine-facing gameplay consequence descriptors.
+- Added semantic Pi tools plus `/narrative-flow`, `/choices`, `/choose`, `/quests`, and `/timeline`.
+- Expanded Roadside Station into two deterministic routes with gated scenes, quest progression, and timeline validation.
+
 ## 0.3.0 - 2026-09-15
 
 Narrative State Engine MVP:

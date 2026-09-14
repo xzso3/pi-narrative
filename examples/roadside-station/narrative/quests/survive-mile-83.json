@@ -1,0 +1,31 @@
+{
+  "protocol": "pi-narrative.quest/v0.4",
+  "id": "survive-mile-83",
+  "title": "Survive Mile 83",
+  "availableWhen": { "op": "const", "value": true },
+  "objectives": [
+    {
+      "id": "resolve-immediate-risk",
+      "title": "Secure enough fuel to leave or find shelter from the storm.",
+      "completeWhen": {
+        "op": "any",
+        "conditions": [
+          { "op": "compare", "path": "characters.mara.resources.fuelLiters", "comparator": "gte", "value": 10 },
+          { "op": "compare", "path": "world.flags.shelterAccepted", "comparator": "eq", "value": true }
+        ]
+      }
+    },
+    {
+      "id": "commit-to-next-step",
+      "title": "Commit to the next leg of the journey.",
+      "dependsOn": ["resolve-immediate-risk"],
+      "completeWhen": {
+        "op": "any",
+        "conditions": [
+          { "op": "compare", "path": "world.flags.departedNorth", "comparator": "eq", "value": true },
+          { "op": "compare", "path": "world.flags.shelterAccepted", "comparator": "eq", "value": true }
+        ]
+      }
+    }
+  ]
+}

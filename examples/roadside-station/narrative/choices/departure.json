@@ -1,0 +1,46 @@
+{
+  "protocol": "pi-narrative.choice/v0.4",
+  "id": "departure",
+  "sceneId": "fuel-bargain",
+  "prompt": "How does Mara resolve the standoff at Mile 83?",
+  "singleUse": true,
+  "availableWhen": { "op": "const", "value": true },
+  "options": [
+    {
+      "id": "trade-medicine-for-fuel",
+      "label": "Trade the last medicine dose for ten liters and leave north.",
+      "availableWhen": {
+        "op": "all",
+        "conditions": [
+          { "op": "compare", "path": "characters.mara.resources.medicineDoses", "comparator": "gte", "value": 1 },
+          { "op": "compare", "path": "characters.oren.resources.fuelLiters", "comparator": "gte", "value": 10 }
+        ]
+      },
+      "outcomeText": "Mara gives Oren the medicine. Oren transfers ten liters, and Mara commits to the northern road.",
+      "deltas": [
+        { "type": "resource", "characterId": "mara", "resourceId": "medicineDoses", "op": "increment", "value": -1 },
+        { "type": "resource", "characterId": "oren", "resourceId": "fuelLiters", "op": "increment", "value": -10 },
+        { "type": "resource", "characterId": "mara", "resourceId": "fuelLiters", "op": "increment", "value": 10 },
+        { "type": "relationship", "fromCharacterId": "oren", "toCharacterId": "mara", "metric": "trust", "op": "increment", "value": 0.2 },
+        { "type": "state", "scope": "world", "key": "departedNorth", "op": "set", "value": true }
+      ],
+      "gameplayConsequences": [
+        { "type": "unlock-route", "id": "north-road" },
+        { "type": "consume-key-item", "id": "medicine-dose" }
+      ]
+    },
+    {
+      "id": "accept-shelter",
+      "label": "Keep the medicine and wait out the storm at the station.",
+      "outcomeText": "Mara keeps the medicine and accepts shelter until the storm passes.",
+      "deltas": [
+        { "type": "relationship", "fromCharacterId": "oren", "toCharacterId": "mara", "metric": "trust", "op": "increment", "value": 0.05 },
+        { "type": "state", "scope": "world", "key": "shelterAccepted", "op": "set", "value": true }
+      ],
+      "gameplayConsequences": [
+        { "type": "unlock-route", "id": "storm-shelter" },
+        { "type": "set-checkpoint", "id": "mile-83-shelter" }
+      ]
+    }
+  ]
+}

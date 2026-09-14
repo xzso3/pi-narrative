@@ -13,6 +13,8 @@ for (const file of [
   "skills/narrative-arbiter/SKILL.md",
   "src/state-engine.js",
   "src/pi-arbiter-runner.ts",
+  "src/semantics.js",
+  "skills/game-narrative-semantics/SKILL.md",
 ]) {
   if (!fs.existsSync(new URL(`../${file}`, import.meta.url))) throw new Error(`Missing ${file}`);
 }

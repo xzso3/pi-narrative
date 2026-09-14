@@ -1,0 +1,18 @@
+{
+  "id": "north-road",
+  "title": "Into the Dust",
+  "location": "The old northern highway beyond Mile 83.",
+  "situation": "Mara leaves the station with enough fuel to risk the damaged northern road.",
+  "cast": ["mara"],
+  "publicFactIds": ["bridge-rumor"],
+  "publicEvents": ["The storm is closing over the highway behind her."],
+  "actorGoals": { "mara": "Reach the bridge before visibility collapses." },
+  "entryCondition": {
+    "op": "all",
+    "conditions": [
+      { "op": "compare", "path": "world.flags.departedNorth", "comparator": "eq", "value": true },
+      { "op": "compare", "path": "characters.mara.resources.fuelLiters", "comparator": "gte", "value": 10 }
+    ]
+  },
+  "outcome": { "stateChanges": ["Not authored in the v0.4 demo."] }
+}

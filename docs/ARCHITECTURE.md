@@ -1,17 +1,18 @@
-# Architecture v0.3
+# Architecture v0.4
 
 ## Layering
 
 ```text
 Pi authoring session
- ├─ Skills: Director / Writer / Reviewer / Arbiter methodology
+ ├─ Skills: Director / Writer / Reviewer / Arbiter / Game Semantics
  └─ Extension: commands and deterministic tool boundary
           │
           ▼
- Harness-independent runtime
+ Harness-independent domain/runtime
  ├─ core.js          authored data + epistemic filtering
  ├─ runtime.js       scene turn orchestration
- └─ state-engine.js  event sourcing + deterministic mutation rules
+ ├─ state-engine.js  event sourcing + deterministic mutation rules
+ └─ semantics.js     conditions / choices / quests / branches / timeline
           │
           ├──────────────┐
           ▼              ▼
@@ -23,41 +24,56 @@ Pi authoring session
          versioned project files
 ```
 
-The domain/runtime code does not depend on Pi. Pi-specific child-session adapters live in `src/pi-*-runner.ts`.
+The domain/runtime/semantics code does not depend on Pi. Pi-specific child-session adapters remain confined to `src/pi-*-runner.ts`.
+
+## Authority boundaries
+
+There are three different authorities:
+
+1. **Actor** — proposes character behavior from filtered knowledge.
+2. **Arbiter** — resolves uncertain free-form Actor attempts into candidate deltas.
+3. **Authored semantic rules** — deterministic designer-owned game logic such as player choice effects and scene gates.
+
+The Arbiter does not override authored choice effects, and authored conditions do not call an LLM.
 
 ## Durable data lifecycle
 
 ```text
-scenes/       author scene briefs (non-canon)
+scenes/       authored scene briefs + entry/exit gates
+choices/      authored decisions and explicit effects
+branches/     deterministic scene routing rules
+quests/       derived objective definitions
+timeline.json continuity/order constraints
 simulations/  private/public exploratory turn evidence
-events/       accepted mutable-world transitions
+events/       accepted mutable-world + authored-choice transitions
 state/        revision-0 state + rebuildable current cache
 drafts/       writer output awaiting approval
 canon/        approved scene assets
 ```
 
-`events/` is authoritative for mutable simulation state; `canon/` remains the approval boundary for authored game-script output. They are intentionally different concepts.
+## Derived flow
 
-## Epistemic isolation
+Quest status, available choices, scene gates, and branch targets are computed from current replayed state + event history. They are never a second mutable source of truth.
 
-There are three boundaries:
+```text
+initial state + events
+        ↓ replay
+ current state
+        ├─ predicates → choices
+        ├─ predicates → quest/objective states
+        ├─ predicates → scene gates
+        ├─ predicates → branch targets
+        └─ event order → timeline diagnostics
+```
 
-1. `buildActorContext()` filters authored world/character data.
-2. `actorMutableStateView()` exposes only the current character's mutable state plus public world flags.
-3. `publicTurnView()` exposes attempted action, spoken dialogue, and Arbiter observable result—but not private intent/rationale/emotion or Arbiter log reason.
+## Scene transition safety
 
-Pi child sessions additionally disable normal project extensions, skills, prompt templates, themes, context files, and appended system prompts. A fresh session alone is not treated as sufficient isolation.
+`runtime.createSimulation()` evaluates the target scene's entry gate before creating a simulation. Branch resolution also checks that gate. Therefore neither a direct simulation request nor a branch rule can bypass scene eligibility.
 
-## World-truth authority
+## Choice authority
 
-An Actor may say it tries to do something. That is evidence, not state. An Arbiter proposes a structured decision; deterministic code validates deltas and appends a revisioned event. Only a committed event changes mutable world truth.
-
-## State consistency
-
-`state/initial.json + ordered events/*` reconstruct current state. Event revisions must form a contiguous chain. `baseRevision` provides optimistic concurrency. `state/current.json` may be deleted and rebuilt.
-
-A deterministic event id per simulation turn also supports recovery when an event reaches disk immediately before its simulation transcript update.
+Designer-authored choice deltas are committed through the same StateDelta validator/event log as Arbiter changes, but no Arbiter LLM is involved. This preserves deterministic designer intent while retaining replay/revision guarantees.
 
 ## Canon policy
 
-Canonization remains explicitly human-confirmed and non-overwriting. v0.3 does not automatically promote mutable simulation events into approved authored canon.
+Canonization remains explicitly human-confirmed and non-overwriting. v0.4 game-flow state still does not automatically promote simulation output into approved script canon.

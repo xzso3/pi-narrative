@@ -1,0 +1,15 @@
+{
+  "id": "storm-shelter",
+  "title": "Wait Out the Storm",
+  "location": "The station's cramped maintenance room.",
+  "situation": "Mara accepts Oren's offer to wait until the dust storm passes.",
+  "cast": ["mara", "oren"],
+  "publicFactIds": [],
+  "publicEvents": ["Dust begins hammering the shutters."],
+  "actorGoals": {
+    "mara": "Learn what Oren is hiding without escalating the situation.",
+    "oren": "Keep Mara away from the underground reserve while the storm passes."
+  },
+  "entryCondition": { "op": "compare", "path": "world.flags.shelterAccepted", "comparator": "eq", "value": true },
+  "outcome": { "stateChanges": ["Not authored in the v0.4 demo."] }
+}

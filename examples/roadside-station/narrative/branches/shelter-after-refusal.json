@@ -1,0 +1,8 @@
+{
+  "protocol": "pi-narrative.branch/v0.4",
+  "id": "shelter-after-refusal",
+  "fromSceneId": "fuel-bargain",
+  "targetSceneId": "storm-shelter",
+  "priority": 90,
+  "when": { "op": "compare", "path": "world.flags.shelterAccepted", "comparator": "eq", "value": true }
+}

@@ -4,7 +4,7 @@ import { loadCharacter, loadWorld, narrativePath, readJson, writeJsonAtomic } fr
 
 export const STATE_PROTOCOL = "pi-narrative.state/v0.3";
 export const DELTA_PROTOCOL = "pi-narrative.state-delta/v0.3";
-export const EVENT_PROTOCOL = "pi-narrative.event/v0.3";
+export const EVENT_PROTOCOL = "pi-narrative.event/v0.4";
 export const ARBITER_DECISION_PROTOCOL = "pi-narrative.arbiter-decision/v0.3";
 
 const stateDir = (projectRoot) => narrativePath(projectRoot, "state");
@@ -67,6 +67,7 @@ export function listNarrativeEvents(projectRoot) {
     .map((name) => readJson(path.join(dir, name)));
 }
 
+
 export function findNarrativeEvent(projectRoot, eventId) {
   return listNarrativeEvents(projectRoot).find((event) => event.id === eventId) ?? null;
 }
@@ -95,7 +96,7 @@ export function validateStateDelta(projectRoot, state, delta) {
   }
 
   const numericOp = (kind) => {
-    if (!["increment", "set"].includes(delta.op)) errors.push(`${kind}.op must be 'increment' or 'set'.`);
+    if (!['increment', 'set'].includes(delta.op)) errors.push(`${kind}.op must be 'increment' or 'set'.`);
     if (typeof delta.value !== "number" || !Number.isFinite(delta.value)) errors.push(`${kind}.value must be a finite number.`);
   };
 
@@ -126,12 +127,12 @@ export function validateStateDelta(projectRoot, state, delta) {
       break;
     }
     case "state": {
-      if (!["character", "world"].includes(delta.scope)) errors.push("state.scope must be 'character' or 'world'.");
+      if (!['character', 'world'].includes(delta.scope)) errors.push("state.scope must be 'character' or 'world'.");
       if (delta.scope === "character" && !characterExists(projectRoot, delta.characterId)) {
         errors.push(`Unknown character '${delta.characterId}'.`);
       }
       if (typeof delta.key !== "string" || !delta.key.trim()) errors.push("state.key is required.");
-      if (!["set", "increment"].includes(delta.op)) errors.push("state.op must be 'set' or 'increment'.");
+      if (!['set', 'increment'].includes(delta.op)) errors.push("state.op must be 'set' or 'increment'.");
       if (delta.op === "increment" && (typeof delta.value !== "number" || !Number.isFinite(delta.value))) {
         errors.push("state increment requires a finite numeric value.");
       }
@@ -169,12 +170,18 @@ export function validateArbiterDecision(projectRoot, state, decision) {
     errors.push("observableResult must be a non-empty string.");
   }
   if (!Array.isArray(decision.deltas)) errors.push("deltas must be an array.");
+
+  // Validate each delta against the preview produced by all earlier valid deltas.
+  // This closes compound-update bypasses such as two individually legal decrements
+  // that would become negative when applied together.
+  let preview = state;
   for (const [index, delta] of (decision.deltas ?? []).entries()) {
-    const check = validateStateDelta(projectRoot, state, delta);
+    const check = validateStateDelta(projectRoot, preview, delta);
     for (const error of check.errors) errors.push(`deltas[${index}]: ${error}`);
+    if (check.valid) preview = applyStateDelta(preview, delta);
   }
   if (decision.outcome === "rejected" && (decision.deltas?.length ?? 0) > 0) {
-    errors.push("A rejected action cannot apply state deltas in v0.3.");
+    errors.push("A rejected action cannot apply state deltas in v0.3+.");
   }
   return { valid: errors.length === 0, errors };
 }
@@ -263,14 +270,38 @@ export function actorMutableStateView(projectRoot, characterId) {
   };
 }
 
+function normalizeEventSource(input) {
+  if (input.source) {
+    if (!input.source.type || !["actor-turn", "choice", "system"].includes(input.source.type)) {
+      throw new Error("NarrativeEvent source.type must be actor-turn, choice, or system.");
+    }
+    if (input.source.type === "actor-turn") {
+      if (!input.source.simulationId || !Number.isInteger(input.source.turn) || !input.source.characterId) {
+        throw new Error("actor-turn source requires simulationId, turn, and characterId.");
+      }
+    }
+    if (input.source.type === "choice" && (!input.source.choiceId || !input.source.optionId)) {
+      throw new Error("choice source requires choiceId and optionId.");
+    }
+    return input.source;
+  }
+  if (input.simulationId && Number.isInteger(input.turn) && input.characterId) {
+    return {
+      type: "actor-turn",
+      simulationId: input.simulationId,
+      turn: input.turn,
+      characterId: input.characterId,
+    };
+  }
+  return { type: "system", ...(input.sourceId ? { sourceId: input.sourceId } : {}) };
+}
+
 export function commitNarrativeEvent(projectRoot, input) {
   const state = loadNarrativeState(projectRoot);
   if (input.baseRevision != null && input.baseRevision !== state.revision) {
     throw new Error(`State revision conflict: expected ${input.baseRevision}, current ${state.revision}.`);
   }
-  if (!input.id || !input.simulationId || !Number.isInteger(input.turn) || !input.characterId) {
-    throw new Error("NarrativeEvent requires id, simulationId, turn, and characterId.");
-  }
+  if (!input.id) throw new Error("NarrativeEvent requires id.");
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(input.id)) {
     throw new Error("NarrativeEvent id may contain only letters, numbers, dot, underscore, and hyphen.");
   }
@@ -278,6 +309,7 @@ export function commitNarrativeEvent(projectRoot, input) {
     throw new Error(`NarrativeEvent '${input.id}' already exists.`);
   }
 
+  const source = normalizeEventSource(input);
   const check = validateArbiterDecision(projectRoot, state, input.decision);
   if (!check.valid) throw new Error(`Invalid ArbiterDecision: ${check.errors.join("; ")}`);
 
@@ -285,9 +317,12 @@ export function commitNarrativeEvent(projectRoot, input) {
   const event = {
     protocol: EVENT_PROTOCOL,
     id: input.id,
-    simulationId: input.simulationId,
-    turn: input.turn,
-    characterId: input.characterId,
+    source,
+    ...(source.type === "actor-turn" ? {
+      simulationId: source.simulationId,
+      turn: source.turn,
+      characterId: source.characterId,
+    } : {}),
     revisionBefore: state.revision,
     revisionAfter,
     outcome: input.decision.outcome,
@@ -295,6 +330,9 @@ export function commitNarrativeEvent(projectRoot, input) {
     ...(input.decision.reason?.trim() ? { reason: input.decision.reason.trim() } : {}),
     ...(input.actorResponse ? { privateActorResponse: input.actorResponse } : {}),
     deltas: input.decision.deltas ?? [],
+    ...(Array.isArray(input.gameplayConsequences) && input.gameplayConsequences.length > 0
+      ? { gameplayConsequences: input.gameplayConsequences }
+      : {}),
     createdAt: new Date().toISOString(),
   };
 
