@@ -1,17 +1,26 @@
-# Roadmap after v0.1
+# Roadmap
 
-## v0.2 — Actor Runtime
+## v0.1 — Narrative state boundary ✅
 
-- Child Pi sessions / subagent orchestration.
+- Pi package skeleton.
+- Character knowledge isolation.
+- Scene validation.
+- Simulation/draft/canon separation.
+- Human canon gate.
+
+## v0.2 — Actor Runtime ✅
+
+- Isolated Pi child sessions per Actor turn.
 - Structured ActorResponse schema.
 - Turn scheduler and perception/action loop.
-- Model selection per role.
+- Public/private transcript separation.
 - Simulation replay and resume.
 
 ## v0.3 — Narrative state engine
 
-- Explicit events and state deltas.
+- Explicit typed events and state deltas.
 - Relationship and knowledge changes.
+- Director/Environment arbitration of proposed effects.
 - Timeline and continuity rules.
 - Revision-safe canon semantics.
 

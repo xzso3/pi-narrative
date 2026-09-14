@@ -1,7 +1,7 @@
 {
   "name": "pi-narrative",
-  "version": "0.1.0",
-  "description": "MVP narrative pipeline for Pi: knowledge-isolated roleplay contexts, scene validation, simulation capture, and explicit canonization.",
+  "version": "0.2.0",
+  "description": "Agent-based game narrative pipeline for Pi with knowledge-isolated Actor child sessions, resumable scene simulation, review, and canonization.",
   "type": "module",
   "license": "MIT",
   "private": false,
@@ -17,8 +17,12 @@
     "typebox": "*"
   },
   "pi": {
-    "extensions": ["extensions"],
-    "skills": ["skills"]
+    "extensions": [
+      "extensions"
+    ],
+    "skills": [
+      "skills"
+    ]
   },
   "files": [
     "extensions",

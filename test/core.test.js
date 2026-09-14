@@ -31,6 +31,7 @@ test("scene validator catches missing cast characters", () => {
 test("canonization is explicit and refuses overwrite", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pi-narrative-"));
   fs.cpSync(fixture, tmp, { recursive: true });
+  fs.mkdirSync(path.join(tmp, "narrative/drafts"), { recursive: true });
   fs.copyFileSync(
     path.join(tmp, "narrative/scenes/fuel-bargain.json"),
     path.join(tmp, "narrative/drafts/fuel-bargain.json"),
