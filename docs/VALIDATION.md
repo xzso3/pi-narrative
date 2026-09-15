@@ -1,57 +1,36 @@
-# Validation plan v0.4
+# Validation Plan v0.5
 
-Current deterministic regression result: **28/28 passing**.
+Current complete repository regression result: **40/40 passing** in GitHub Actions for the v0.5 merge.
 
-## Automated regression suite
+## Coverage
 
-The suite covers all previous epistemic/runtime/state invariants plus v0.4 game semantics.
+Knowledge/runtime: actor knowledge isolation, private mental-state isolation, scene-gate enforcement, crash recovery.
 
-Previous boundaries retained:
+State Engine: illegal delta rejection, sequential compound-delta validation, replay, revision conflicts.
 
-- Actor context excludes another character's secret and author-only future facts.
-- Mutable initial state cannot smuggle actor-invisible knowledge.
-- Private Actor intent/rationale/emotion does not enter another Actor's perception.
-- StateDelta rejects illegal resource/relationship/knowledge mutations.
-- Arbiter rejection cannot mutate state.
-- Event log replay reconstructs current state.
-- Stale base revisions fail.
-- Event-before-transcript interruption recovers without rerunning Actor/Arbiter.
+Game semantics: safe predicate DSL, deterministic choices, target-gated branches, derived quests, timeline constraints, strict event selectors, gameplay consequences.
 
-v0.4 semantic coverage:
+Engine integration: Unity-friendly DTOs, deterministic `deliveryId`, redelivery until ACK, idempotent ACK, unknown ACK rejection, save snapshots, checkpoint tamper detection, schema migration, localization IDs, malformed consequence rejection.
 
-- Predicate DSL evaluates state without arbitrary expressions.
-- Locked scene entry prevents simulation creation.
-- Authored choice effects commit deterministically and change state once.
-- Single-use choices reject a second selection.
-- Alternative choice routes produce different branches without cross-contamination.
-- Branch resolution also checks target scene entry gates.
-- Quest objectives derive `locked/active/completed/failed` states from predicates and dependencies.
-- `condition-requires` timeline constraints detect continuity violations.
-- `event-before` constraints use durable event order.
-- Event-selector predicates query semantic history.
-- Choice writes still obey expected revision checks and StateDelta validation.
-- Gameplay consequence descriptors persist on events.
-- Unified flow snapshots combine gates, choices, quests, branches, timeline, and gameplay outputs.
+## CI
 
-## Pi extension/API verification
+```bash
+npm run check
+npm run validate:project -- examples/roadside-station
+```
 
-The extension continues to use current Pi SDK patterns for registered tools/commands and isolated Actor/Arbiter sessions. v0.4 adds deterministic semantic tools; these do not spawn additional LLM sessions.
+The v0.5 merge CI completed with 40 tests, 40 passing, 0 failing, and Roadside Station returned `valid: true`. Documentation maintenance additionally runs `npm run check:docs` through `npm run check`.
 
-Child sessions still explicitly disable normal project extensions, skills, prompt templates, themes, context files, and appended system prompts, exposing only the structured submit tool required by that child role.
+## Manual smoke test
 
-## Manual Pi smoke test
+1. clone + `pi install .`;
+2. `/narrative-state`;
+3. `/narrative-flow fuel-bargain`;
+4. `/choose departure trade-medicine-for-fuel`;
+5. `/quests` and `/timeline`;
+6. `/engine-export unity`;
+7. `/engine-ack unity <delivery-id>`;
+8. `/engine-save unity slot1` and `/engine-checkpoint post-trade`;
+9. `/engine-validate`.
 
-1. Install: `pi install https://github.com/xzso3/pi-narrative`.
-2. `cd examples/roadside-station`.
-3. Run `/narrative-state`; verify revision 0.
-4. Run `/narrative-flow fuel-bargain`; verify `departure` is available and no branch is yet active.
-5. Run `/choose departure trade-medicine-for-fuel` and approve the confirmation.
-6. Verify revision 1, Mara has 12L fuel, medicine is 0, and `north-road` is the available branch.
-7. Run `/quests`; verify `survive-mile-83` is completed.
-8. Run `/timeline`; verify the `fuel-before-north` constraint is satisfied.
-9. Run `/narrative-flow north-road`; verify the scene entry gate is true.
-10. In a fresh fixture, choose `accept-shelter`; verify only `storm-shelter` unlocks and Mara retains medicine/fuel.
-
-## Environment caveat
-
-If the execution environment cannot reach the npm registry or lacks model credentials, pure Node regression/package validation can still run deterministically. A fresh dependency install/live model call must not be reported as passing unless it actually executes.
+Model-backed Actor/Arbiter smoke testing requires a live Pi model and `/simulate-scene fuel-bargain 4`.

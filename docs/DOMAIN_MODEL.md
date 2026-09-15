@@ -1,136 +1,49 @@
-# Domain model v0.4
+# Domain Model v0.5
 
-The schema remains intentionally JSON-based, deterministic, and reviewable in Git.
+The schema is JSON-based, deterministic, Git-reviewable, and split by authority.
 
 ## Authored narrative layer
 
-### Project
+Project: `protocol`, integer `schemaVersion`, `id`, `title`, `sceneOrder[]`.
 
-- `schemaVersion`
-- `id`
-- `title`
-- `sceneOrder[]`
+WorldFact: `id`, `text`, `actorVisible`.
 
-### WorldFact
+Character: identity/desire/fear, boundaries/speech, authored baseline state/relationships, knowledge.
 
-- `id`
-- `text`
-- `actorVisible` — hard boundary for author-only facts
-
-### Character
-
-- identity / desire / fear
-- boundaries / speech
-- authored baseline state/relationships
-- knowledge.factIds / privateFacts
-
-### Scene
-
-- id/title/location/situation
-- cast[]
-- publicFactIds[] / publicEvents[]
-- actorGoals{}
-- optional `entryCondition`
-- optional `exitCondition`
-- outcome metadata
+Scene: identity/location/situation, cast, public facts/events, actor goals, optional entry/exit conditions.
 
 ## Runtime simulation layer
 
-### ActorResponse
+ActorResponse: private `intent`, attempted `action`, optional dialogue, private rationale/emotionalShift.
 
-- `intent` — private
-- `action` — attempted externally observable action
-- optional `dialogue`
-- optional `rationale` — private
-- optional `emotionalShift` — private
+ArbiterDecision: outcome, observable result, optional private reason, deltas.
 
-### ArbiterDecision
+StateDelta types: resource, relationship, knowledge, state.
 
-- `outcome`: `accepted | rejected | partial`
-- `observableResult`
-- optional private `reason`
-- `deltas[]`
+NarrativeEvent source types: actor-turn, choice, system. Events hold revision bounds, validated deltas, optional recovery data, and optional gameplay consequences.
 
-### StateDelta
-
-- `resource`
-- `relationship`
-- `knowledge`
-- `state`
-
-### NarrativeEvent
-
-v0.4 adds a typed `source`:
-
-- `actor-turn`
-- `choice`
-- `system`
-
-Events also contain revision bounds, observable result, validated deltas, optional private Actor recovery data, and optional `gameplayConsequences[]`.
-
-### Mutable Narrative State
-
-- protocol / revision
-- characters{id: attributes/resources/relationships/knowledge}
-- world.flags
-
-`state/initial.json + events/*` remains authoritative.
+Mutable state is authoritative as `state/initial.json + events/*`.
 
 ## Game semantics layer
 
-### Condition
+Condition uses `const`, `all`, `any`, `not`, `compare`, `event`.
 
-Declarative predicate tree using:
+Choice defines availability, options, deterministic deltas, and gameplay consequences.
 
-- `const`
-- `all`
-- `any`
-- `not`
-- `compare`
-- `event`
-
-### Choice
-
-- id / sceneId / prompt
-- singleUse
-- availableWhen
-- options[]
-  - id / label
-  - availableWhen
-  - outcomeText
-  - deltas[]
-  - gameplayConsequences[]
-
-### BranchRule
-
-- id
-- fromSceneId
-- targetSceneId
-- priority
-- when
-
-### Quest
-
-- id / title
-- availableWhen / failWhen / completeWhen
-- objectives[]
-  - id / title
-  - dependsOn[]
-  - availableWhen / completeWhen / failWhen
+BranchRule defines fromSceneId/targetSceneId/priority/when.
 
 Quest/objective status is derived as `locked | active | completed | failed`.
 
-### TimelineConstraint
+TimelineConstraint supports `condition-requires` and `event-before`.
 
-- `condition-requires`
-- `event-before`
+## Engine integration layer
 
-### GameplayConsequence
+GameplayConsequences become stable Delivery records.
 
-An engine-agnostic descriptor persisted on semantic events. v0.4 records/exposes these but does not execute them.
+EngineExport contains protocol/schema, project/consumer identity, event cursor, Unity-friendly state DTO, unacknowledged consequences, localization catalog, and deterministic `snapshotId`.
+
+ACK Ledger is consumer-scoped derived integration state. Save Snapshot carries engine-facing state/cursor/ACK data. Checkpoint hashes event-log prefix + replayed state.
 
 ## Production layer
 
-### Draft / Canon
-
-Draft and Canon remain authored script outputs. Mutable runtime state and game-flow semantics do not automatically become approved canon.
+Draft and Canon remain authored script outputs; runtime state and engine delivery state do not automatically become approved canon.
