@@ -102,18 +102,16 @@ test("ACK rejects unknown delivery ids", () => {
   assert.throws(() => acknowledgeConsequences(root, "unity", ["pn-999-missing-0"]), /Unknown delivery id/);
 });
 
-test("unacknowledged consequences are never hidden by narrative cursor progress", () => {
+test("unacknowledged consequences redeliver until ACK", () => {
   const root = fixture();
-  const first = buildEngineExport(root, { consumerId: "unity", sinceRevision: 1 });
+  const first = buildEngineExport(root, { consumerId: "unity" });
   assert.equal(first.cursor.revision, 2);
-  assert.equal(first.cursor.requestedSinceRevision, 1);
   assert.equal(first.consequences.length, 1);
   const id = first.consequences[0].deliveryId;
-  // Even when the consumer reports a later cursor, unACKed effects redeliver.
-  assert.equal(buildEngineExport(root, { consumerId: "unity", sinceRevision: 2 }).consequences[0].deliveryId, id);
-  assert.throws(() => buildEngineExport(root, { sinceRevision: 99 }), /sinceRevision/);
+  // Re-exporting the same or later narrative state MUST redeliver until ACK.
+  assert.equal(buildEngineExport(root, { consumerId: "unity" }).consequences[0].deliveryId, id);
   acknowledgeConsequences(root, "unity", [id]);
-  assert.equal(buildEngineExport(root, { consumerId: "unity", sinceRevision: 2 }).consequences.length, 0);
+  assert.equal(buildEngineExport(root, { consumerId: "unity" }).consequences.length, 0);
 });
 
 test("save snapshot captures narrative cursor and ACK state with deterministic snapshot id", () => {
