@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased - Documentation
+
+- Reworked the README into a from-zero Quick Start plus Step-by-Step tutorial covering deterministic game-flow, Actor/Arbiter simulation, engine export, ACK, save snapshots, checkpoints, and project validation.
+- Added English and Simplified Chinese documentation indexes and a standalone Getting Started guide.
+- Added Simplified Chinese mirrors for all repository documentation, ADRs, research notes, Unity README, and human-readable Skill references.
+- Updated stale v0.4 architecture/domain/validation/publishing docs to reflect the v0.5 engine boundary and 40/40 CI baseline.
+- Added `check:docs` and CI-enforced documentation translation coverage.
+
 ## 0.5.0 - 2026-09-15
 
 Engine Integration / Export Layer MVP:

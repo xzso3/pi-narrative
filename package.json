@@ -5,43 +5,22 @@
   "type": "module",
   "license": "MIT",
   "private": false,
-  "engines": {
-    "node": ">=22.19.0"
-  },
+  "engines": { "node": ">=22.19.0" },
   "scripts": {
     "test": "node --test",
     "validate:project": "node scripts/validate-project.mjs",
-    "check": "node scripts/check-package.mjs && npm test"
+    "check:docs": "node scripts/check-doc-translations.mjs",
+    "check": "node scripts/check-package.mjs && node scripts/check-doc-translations.mjs && npm test"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "typebox": "*"
   },
-  "pi": {
-    "extensions": [
-      "extensions"
-    ],
-    "skills": [
-      "skills"
-    ]
-  },
+  "pi": { "extensions": ["extensions"], "skills": ["skills"] },
   "files": [
-    "extensions",
-    "src",
-    "skills",
-    "scripts",
-    "examples/unity",
-    "docs/ENGINE_INTEGRATION.md",
-    "README.md",
-    "LICENSE"
+    "extensions", "src", "skills", "scripts", "examples/unity", "docs",
+    "README.md", "README.zh-CN.md", "CHANGELOG.md", "CHANGELOG.zh-CN.md",
+    "CONTRIBUTING.md", "CONTRIBUTING.zh-CN.md", "LICENSE"
   ],
-  "keywords": [
-    "pi",
-    "agent",
-    "narrative",
-    "game-writing",
-    "unity",
-    "middleware",
-    "storytelling"
-  ]
+  "keywords": ["pi", "agent", "narrative", "game-writing", "unity", "middleware", "storytelling"]
 }

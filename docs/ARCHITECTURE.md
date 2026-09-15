@@ -1,18 +1,20 @@
-# Architecture v0.4
+# Architecture v0.5
 
 ## Layering
 
 ```text
 Pi authoring session
- ├─ Skills: Director / Writer / Reviewer / Arbiter / Game Semantics
- └─ Extension: commands and deterministic tool boundary
+ ├─ Skills: Director / Writer / Reviewer / Arbiter / Game Semantics / Engine Integration
+ ├─ narrative-runtime extension
+ └─ engine-integration extension
           │
           ▼
- Harness-independent domain/runtime
- ├─ core.js          authored data + epistemic filtering
- ├─ runtime.js       scene turn orchestration
- ├─ state-engine.js  event sourcing + deterministic mutation rules
- └─ semantics.js     conditions / choices / quests / branches / timeline
+Harness-independent domain/runtime
+ ├─ core.js                authored data + epistemic filtering
+ ├─ runtime.js             scene turn orchestration
+ ├─ state-engine.js        event sourcing + deterministic mutation rules
+ ├─ semantics.js           conditions / choices / quests / branches / timeline
+ └─ engine-integration.js  export / ACK / save / checkpoint / migration
           │
           ├──────────────┐
           ▼              ▼
@@ -22,58 +24,39 @@ Pi authoring session
           └──────┬───────┘
                  ▼
          versioned project files
+                 │
+                 ▼
+          EngineExport DTO
+                 │
+                 ▼
+           Unity / runtime
 ```
 
-The domain/runtime/semantics code does not depend on Pi. Pi-specific child-session adapters remain confined to `src/pi-*-runner.ts`.
+The domain/runtime/semantic/engine-export logic does not depend on Pi sessions. Pi-specific adapters remain in `src/pi-*-runner.ts`; Pi-facing tools/commands remain in `extensions/`.
 
 ## Authority boundaries
 
-There are three different authorities:
-
 1. **Actor** — proposes character behavior from filtered knowledge.
 2. **Arbiter** — resolves uncertain free-form Actor attempts into candidate deltas.
-3. **Authored semantic rules** — deterministic designer-owned game logic such as player choice effects and scene gates.
+3. **Authored semantic rules** — deterministic designer-owned logic such as choice effects and scene gates.
+4. **Engine consumer** — executes exported gameplay consequences but does not rewrite narrative truth by ACKing them.
 
-The Arbiter does not override authored choice effects, and authored conditions do not call an LLM.
+Engine ACK state is integration state, not story state.
 
 ## Durable data lifecycle
 
-```text
-scenes/       authored scene briefs + entry/exit gates
-choices/      authored decisions and explicit effects
-branches/     deterministic scene routing rules
-quests/       derived objective definitions
-timeline.json continuity/order constraints
-simulations/  private/public exploratory turn evidence
-events/       accepted mutable-world + authored-choice transitions
-state/        revision-0 state + rebuildable current cache
-drafts/       writer output awaiting approval
-canon/        approved scene assets
-```
+`scenes/`, `choices/`, `branches/`, `quests/`, `timeline.json`, `simulations/`, `events/`, `state/`, `drafts/`, and `canon/` hold narrative authoring/runtime data. `runtime/<consumer>/acks.json`, `exports/`, save exports, and `checkpoints/` are derived integration artifacts.
 
-## Derived flow
+Quest status, available choices, scene gates, and branch targets are derived from replayed state + event history and are never a second mutable source of truth.
 
-Quest status, available choices, scene gates, and branch targets are computed from current replayed state + event history. They are never a second mutable source of truth.
+## Simulation safety
 
-```text
-initial state + events
-        ↓ replay
- current state
-        ├─ predicates → choices
-        ├─ predicates → quest/objective states
-        ├─ predicates → scene gates
-        ├─ predicates → branch targets
-        └─ event order → timeline diagnostics
-```
+Scene entry gates are checked before simulation creation and during branch resolution. Actor actions remain attempts until Arbiter resolution + deterministic validation.
 
-## Scene transition safety
+## Engine delivery safety
 
-`runtime.createSimulation()` evaluates the target scene's entry gate before creating a simulation. Branch resolution also checks that gate. Therefore neither a direct simulation request nor a branch rule can bypass scene eligibility.
-
-## Choice authority
-
-Designer-authored choice deltas are committed through the same StateDelta validator/event log as Arbiter changes, but no Arbiter LLM is involved. This preserves deterministic designer intent while retaining replay/revision guarantees.
+Gameplay consequences have stable `deliveryId` values. Delivery is at-least-once; consumers must deduplicate before side effects and ACK after safe handling.
 
 ## Canon policy
 
-Canonization remains explicitly human-confirmed and non-overwriting. v0.4 game-flow state still does not automatically promote simulation output into approved script canon.
+Canonization is human-confirmed and non-overwriting. Simulation events, derived game-flow state, and engine ACK state do not automatically become approved canon.

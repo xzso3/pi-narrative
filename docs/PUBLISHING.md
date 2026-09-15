@@ -1,25 +1,27 @@
-# Publishing this MVP to GitHub
+# Publishing and Installation
 
-The intended public repository name is `pi-narrative`.
+Public repository: `https://github.com/xzso3/pi-narrative`.
 
-The ChatGPT GitHub connector used during the initial MVP build could write to existing repositories but did not expose repository creation. After an empty public repository named `pi-narrative` is created under the desired owner, publish this local Git history with:
-
-```bash
-git remote add origin git@github.com:<owner>/pi-narrative.git
-git push -u origin main
-```
-
-Or HTTPS:
+Install:
 
 ```bash
-git remote add origin https://github.com/<owner>/pi-narrative.git
-git push -u origin main
+pi install https://github.com/xzso3/pi-narrative
 ```
 
-Then Pi users can install directly from GitHub:
+Local development:
 
 ```bash
-pi install https://github.com/<owner>/pi-narrative
+git clone https://github.com/xzso3/pi-narrative.git
+cd pi-narrative
+pi install .
 ```
 
-Recommended repository visibility: **Public**. Recommended license: **MIT** (already included).
+Validate before publishing:
+
+```bash
+npm test
+npm run check
+npm run validate:project -- examples/roadside-station
+```
+
+Pull requests are validated by GitHub Actions. Keep `package.json` aligned with the current release, update `CHANGELOG.md` for behavior/protocol changes, and add explicit migrations for project-data schema changes.

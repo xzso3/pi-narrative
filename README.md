@@ -1,284 +1,369 @@
 # Pi Narrative
 
-**Pi Narrative** is an experimental agent-based game narrative pipeline built as a Pi package. It separates author knowledge, character cognition, attempted action, world-state resolution, deterministic game-flow semantics, drafts, and approved canon.
+> Agent-based game narrative middleware for Pi: isolated character simulation, event-sourced world state, deterministic game semantics, and a Unity-friendly engine boundary.
 
-Current version: **v0.5 Engine Integration / Export Layer MVP**.
+[简体中文](README.zh-CN.md) · [Documentation](docs/README.md) · [中文文档](docs/zh-CN/README.md) · [Roadmap](docs/ROADMAP.md)
 
-## Core pipeline
+**Current version: v0.5 — Engine Integration / Export Layer MVP**
+
+Pi Narrative started as an experiment in using roleplay agents for game writing. It has evolved into a small narrative runtime with explicit authority boundaries:
 
 ```text
 Author / Director
-      ↓ authored scene + character + semantic rules
-Knowledge filter
+      ↓ authored world, characters, scenes, rules
+Knowledge filtering
       ↓
-Ephemeral Actor child session
-      ↓ structured ActorResponse
- attempted action + dialogue
-      ↓
-Ephemeral Arbiter child session
-      ↓ structured ArbiterDecision
- deterministic validation
-      ↓
-NarrativeEvent append-only log
-      ↓ replay
+Isolated Actor session
+      ↓ attempted action
+Isolated Arbiter session
+      ↓ validated StateDelta
+Append-only NarrativeEvent log
+      ↓ deterministic replay
 Mutable Narrative State
+      ↓ declarative predicates
+Choices / Quests / Branches / Scene Gates / Timeline
+      ↓ GameplayConsequence
+Engine export + stable deliveryId + ACK
       ↓
-Declarative Predicate DSL
-      ↓
-Scene Gates / Choices / Quests / Branches / Timeline
-      ↓
-Gameplay consequence descriptors
-      ↓ stable deliveryId / export / ACK
 Unity / game runtime
-      ↓
-Writer → Reviewer → human /canonize
 ```
 
-v0.4 added deterministic game-flow semantics. v0.5 adds the engine boundary:
+> **LLMs may propose or resolve uncertain character behavior, but game rules and durable state transitions are validated by deterministic code.**
 
-> **Narrative truth and engine delivery state are separate systems.**
+## What Pi Narrative gives you
 
-NarrativeEvents remain authoritative. Engine exports, ACK ledgers, save snapshots, and checkpoints are derived integration artifacts.
+- **Character knowledge isolation** — Actors do not receive author-only future facts or another character's private mental state.
+- **Actor / Arbiter separation** — an Actor can attempt an action; only the Arbiter + State Engine can make an uncertain simulated action become world truth.
+- **Event-sourced world state** — `state/initial.json + events/*` is the mutable narrative source of truth.
+- **Deterministic game semantics** — scene gates, choices, branches, quests, and timeline constraints are JSON data, not LLM judgments.
+- **Human-gated canon** — simulations and drafts are not automatically promoted to approved story canon.
+- **Game-engine boundary** — Unity-friendly DTOs, stable gameplay consequence IDs, ACK ledgers, save snapshots, checkpoints, localization IDs, and project validation.
+- **Regression coverage** — repository CI runs the complete v0.1–v0.5 test suite.
 
-The previous invariant still holds:
+## What it is not
 
-> **Game flow is deterministic data, not an LLM judgment.**
+Pi Narrative is not a one-prompt story generator, a complete visual narrative editor, or a Unity plugin yet. v0.5 provides the deterministic middleware and file/DTO boundary; transport adapters and an authoring GUI are roadmap items.
 
-Actors and the Arbiter can reason about free-form behavior. Scene availability, player choices, quest progression, branches, timeline constraints, and authored choice effects are evaluated by code.
+---
 
-## Why this differs from "AI writes dialogue"
+# Quick Start
 
-The Director can know future plans. Actors cannot. Each Actor runs in a fresh Pi child session with a filtered epistemic context. Other Actors perceive only observable behavior, spoken dialogue, and the Arbiter's observable resolution—not private intent, rationale, emotional metadata, or author-only facts.
+## Prerequisites
 
-The Arbiter resolves uncertain natural-language attempts. It does **not** own authored game rules. A designer-authored choice such as “trade one medicine dose for ten liters” commits its explicit StateDelta effects directly after deterministic validation.
+For using the package with Pi:
 
-## Install
+- a working Pi installation;
+- at least one model/provider configured in Pi if you want Actor/Arbiter simulation.
+
+For cloning, testing, and developing this repository:
+
+- Git;
+- Node.js **22.19+**.
+
+## Path A — Install the Pi package only
 
 ```bash
 pi install https://github.com/xzso3/pi-narrative
 ```
 
-For local development:
+Then start Pi from your project directory.
+
+> Installing the Pi package does **not** copy this repository's `examples/` directory into your current project. Use Path B if you want to run the included demo.
+
+## Path B — Clone the repository and run the demo
 
 ```bash
-pi install ./pi-narrative
-```
-
-## Demo
-
-```bash
+git clone https://github.com/xzso3/pi-narrative.git
+cd pi-narrative
+pi install .
 cd examples/roadside-station
 pi
 ```
 
-Useful commands:
+Inside Pi, start with:
 
 ```text
 /narrative-status
 /narrative-state
 /narrative-flow fuel-bargain
 /choices fuel-bargain
+```
+
+---
+
+# Step-by-Step Tutorial
+
+The Roadside Station demo can be explored in two modes. The deterministic path below does not need an LLM call; the simulation path does.
+
+## Step 1 — Inspect the initial narrative state
+
+```text
+/narrative-state
+/narrative-flow fuel-bargain
+```
+
+State is reconstructed from `narrative/state/initial.json + narrative/events/*.json`. `state/current.json` is only a rebuildable cache.
+
+## Step 2 — Inspect player choices
+
+```text
+/choices fuel-bargain
+```
+
+The demo exposes:
+
+```text
+departure / trade-medicine-for-fuel
+departure / accept-shelter
+```
+
+## Step 3 — Apply a deterministic choice
+
+```text
 /choose departure trade-medicine-for-fuel
+```
+
+After confirmation, inspect:
+
+```text
+/narrative-state
+/narrative-flow fuel-bargain
 /quests
 /timeline
+```
+
+To try the other branch from a clean fixture:
+
+```bash
+git restore examples/roadside-station/narrative
+```
+
+then:
+
+```text
+/choose departure accept-shelter
+```
+
+## Step 4 — Run an Actor / Arbiter simulation
+
+This step requires a working model in Pi:
+
+```text
 /simulate-scene fuel-bargain 4
 ```
 
-The demo now contains two authored routes from the fuel-station scene:
+For each turn:
 
 ```text
-trade medicine for fuel
-        ↓
-  north-road
-
-accept shelter
-        ↓
- storm-shelter
+ActorTurnContext
+      ↓
+fresh isolated Actor child session
+      ↓ structured ActorResponse
+attempted action
+      ↓
+fresh isolated Arbiter child session
+      ↓ structured ArbiterDecision
+validated StateDelta
+      ↓
+NarrativeEvent
 ```
 
-The route is not selected by prose. Choice effects update state, branch predicates evaluate that state, and each target scene independently enforces its own entry gate.
+The Actor does not receive author-only future facts; private intent/rationale/emotion does not leak to the next Actor; and Actor actions remain attempts until Arbiter resolution + deterministic validation.
 
-## Predicate DSL
+## Step 5 — Export to a game engine
 
-v0.4 conditions are JSON trees using only:
-
-- `const`
-- `all`
-- `any`
-- `not`
-- `compare`
-- `event`
-
-Example:
-
-```json
-{
-  "op": "all",
-  "conditions": [
-    {
-      "op": "compare",
-      "path": "characters.mara.resources.fuelLiters",
-      "comparator": "gte",
-      "value": 10
-    },
-    {
-      "op": "compare",
-      "path": "world.flags.departedNorth",
-      "comparator": "eq",
-      "value": true
-    }
-  ]
-}
-```
-
-No JavaScript or arbitrary expressions are evaluated.
-
-## Semantic assets
+After a choice or event has produced `gameplayConsequences`:
 
 ```text
-narrative/
-├── choices/            authored player decisions + deterministic effects
-├── branches/           scene-to-scene branch rules
-├── quests/             derived objective/quest state machines
-├── timeline.json       ordering/continuity constraints
-├── scenes/             entry/exit gates live with scene briefs
-├── events/             append-only authoritative state transitions
-└── state/
-    ├── initial.json    revision-0 mutable state
-    └── current.json    rebuildable replay cache
+/engine-export unity
 ```
 
-Quest, branch, choice availability, and scene-gate results are **derived views**, not independent mutable state.
+Inspect `narrative/exports/unity/latest.json`. The export contains a versioned protocol/schema, event cursor, Unity-friendly state DTOs, pending consequences, localization IDs, and a deterministic `snapshotId`.
 
-
-## v0.5 engine integration
-
-Engine export is deterministic with respect to narrative revision + consumer ACK state. Gameplay consequences receive stable IDs such as:
+Each consequence receives a stable ID similar to:
 
 ```text
-pn-12-choice-departure-trade-0
+pn-1-choice-departure-trade-medicine-for-fuel-0
 ```
 
-Delivery is **at-least-once**. Unity (or another consumer) must persist each applied `deliveryId` and skip duplicates before applying side effects. ACK is durable and idempotent, but ACK alone cannot close the crash window between applying an in-engine side effect and recording the ACK.
+## Step 6 — Consume and ACK safely
 
-The export includes:
-
-- Unity-friendly array DTOs for characters, resources, relationships, attributes, and world flags
-- pending unacknowledged gameplay consequences
-- stable localization IDs with fallback text
-- event cursor + deterministic `snapshotId`
-
-Derived integration paths:
+Delivery is **at-least-once**. The game runtime must deduplicate locally by `deliveryId` before applying side effects. After safe application:
 
 ```text
-narrative/
-├── runtime/<consumer>/acks.json
-├── exports/<consumer>/...
-├── exports/savegames/<consumer>/...
-└── checkpoints/...
+/engine-ack unity <delivery-id>
 ```
 
-These files do not replace `state/initial.json + events/*`.
+ACK is idempotent. Until ACKed, a consequence remains eligible for redelivery.
 
-## Pi tools
-
-Simulation/state tools:
-
-- `narrative_actor_context`
-- `narrative_validate_scene`
-- `narrative_record_simulation`
-- `narrative_start_simulation`
-- `narrative_simulate_next_turn`
-- `narrative_simulation_state`
-- `narrative_state`
-- `narrative_event_log`
-
-v0.4 semantic tools:
-
-- `narrative_evaluate_condition`
-- `narrative_scene_gate`
-- `narrative_choices`
-- `narrative_apply_choice`
-- `narrative_quests`
-- `narrative_branches`
-- `narrative_timeline`
-- `narrative_gameplay_consequences`
-- `narrative_flow`
-
-v0.5 engine integration tools:
-
-- `narrative_engine_export`
-- `narrative_engine_ack`
-- `narrative_save_snapshot`
-- `narrative_checkpoint`
-- `narrative_engine_validate`
-- `narrative_project_migration_preview`
-
-Commands:
-
-- `/narrative-status`
-- `/narrative-state`
-- `/narrative-flow [scene-id]`
-- `/choices [scene-id]`
-- `/choose <choice-id> <option-id>`
-- `/quests`
-- `/timeline`
-- `/simulate-scene <scene-id> [max-turns]`
-- `/canonize <scene-id>`
-- `/engine-export [consumer-id]`
-- `/engine-ack <consumer-id> <delivery-id> [delivery-id...]`
-- `/engine-save [consumer-id] [slot-id]`
-- `/engine-checkpoint [label]`
-- `/engine-validate`
-- `/engine-migrate`
-
-`/choose` asks for confirmation before appending the authoritative choice event.
-
-## Architecture
+## Step 7 — Save and checkpoint
 
 ```text
-Pi package
-├── extensions/narrative-runtime.ts   Pi tools/commands
-├── src/pi-actor-runner.ts            isolated Actor SDK adapter
-├── src/pi-arbiter-runner.ts          isolated Arbiter SDK adapter
-├── src/runtime.js                    scene/turn orchestration
-├── src/state-engine.js               event sourcing + typed deltas
-├── src/semantics.js                  deterministic game-flow semantics
-├── src/engine-integration.js         export / ACK / save / checkpoint / migration
-├── src/core.js                       authored data + knowledge boundary
-├── skills/                            author-facing narrative methods
-└── narrative project files           durable source of truth
+/engine-save unity slot1
+/engine-checkpoint chapter-1-end
 ```
 
-**Skill = cognition. Extension = infrastructure. Runtime = orchestration. Event log = mutable truth. Semantics = deterministic game flow. Engine integration = derived delivery boundary. Canon = approved authored output.**
+Save snapshots carry state/cursor/ACK data. Checkpoints protect an event-log prefix and replayed state against accidental historical mutation.
 
-## Reliability properties
+## Step 8 — Validate
 
-- Author-only facts cannot enter Actor knowledge through normal authored context or initial mutable knowledge.
-- Child Actor/Arbiter sessions do not load normal project extensions, skills, prompt templates, themes, or context files.
-- State writes use an expected revision; stale concurrent writes fail instead of silently overwriting.
-- `current.json` can be deleted and reconstructed from `initial.json + events/*`.
-- Scene simulations cannot start when their deterministic entry gate is false.
-- Single-use choices cannot silently execute twice.
-- Quest state can be rebuilt entirely from state/event history.
-- Branches cannot bypass the target scene's own entry gate.
-- Timeline violations are deterministic diagnostics rather than prompt-only warnings.
-- Engine consequence delivery IDs are deterministic across repeated exports.
-- ACK writes are idempotent and consumer-scoped.
-- Checkpoints hash both event-log prefix and replayed state.
-- Legacy project schema labels migrate explicitly instead of silently changing format.
+```text
+/engine-validate
+```
 
-## Test
+Repository form:
 
 ```bash
 npm test
 npm run check
+npm run validate:project -- examples/roadside-station
 ```
 
-v0.5 adds engine-integration coverage for deterministic export DTOs, ACK idempotency, unknown ACK rejection, incremental consequence windows, save snapshots, checkpoint tamper detection, project schema migration, localization IDs, and CI validation. Previous v0.1–v0.4 coverage remains unchanged.
+## Step 9 — Start your own project
 
-## Current limits
+Copy the example and replace data in this order:
 
-v0.5 defines the stable file/DTO boundary but still does **not** provide a network transport, Unity package installer, exactly-once distributed transaction, multiplayer authority, spatial/combat simulation, arbitrary scripting, or graph authoring UI.
+1. `narrative/project.json`
+2. `narrative/world.json`
+3. `narrative/characters/*.json`
+4. `narrative/state/initial.json`
+5. `narrative/scenes/*.json`
+6. `narrative/choices/*.json`
+7. `narrative/branches/*.json`
+8. `narrative/quests/*.json`
+9. `narrative/timeline.json`
 
-See `docs/MVP_V0.5.md`, `docs/ENGINE_INTEGRATION.md`, `docs/GAME_SEMANTICS.md`, `docs/STATE_ENGINE.md`, and ADRs.
+Run `/engine-validate` frequently while authoring.
+
+A longer tutorial is available at [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+
+---
+
+# Project Data Model
+
+```text
+narrative/
+├── project.json
+├── world.json
+├── characters/
+├── scenes/
+├── choices/
+├── branches/
+├── quests/
+├── timeline.json
+├── state/
+│   ├── initial.json      # authoritative revision-0 state
+│   └── current.json      # rebuildable cache
+├── events/               # append-only authoritative state transitions
+├── simulations/          # exploratory simulation records
+├── drafts/               # writer output awaiting approval
+├── canon/                # human-approved authored canon
+├── runtime/<consumer>/   # derived ACK state
+├── exports/              # derived engine/save exports
+└── checkpoints/          # derived integrity checkpoints
+```
+
+Authority hierarchy:
+
+```text
+Authored definitions          → rules/input
+initial.json + events/*       → mutable narrative truth
+current.json                  → replay cache
+quest/branch/choice results   → derived semantic views
+ACK/export/save/checkpoint    → derived integration state
+canon/*                       → human-approved authored output
+```
+
+---
+
+# Command Reference
+
+## Narrative state & simulation
+
+```text
+/narrative-status
+/narrative-state
+/simulate-scene <scene-id> [max-turns]
+/canonize <scene-id>
+```
+
+## Game semantics
+
+```text
+/narrative-flow [scene-id]
+/choices [scene-id]
+/choose <choice-id> <option-id>
+/quests
+/timeline
+```
+
+## Engine integration
+
+```text
+/engine-export [consumer-id]
+/engine-ack <consumer-id> <delivery-id> [delivery-id...]
+/engine-save [consumer-id] [slot-id]
+/engine-checkpoint [label]
+/engine-validate
+/engine-migrate
+```
+
+---
+
+# Architecture at a Glance
+
+```text
+Pi package
+├── extensions/narrative-runtime.ts   authoring/simulation/semantic tools
+├── extensions/engine-integration.ts  export/ACK/save/checkpoint tools
+├── src/core.js                       authored data + knowledge boundary
+├── src/runtime.js                    scene/turn orchestration
+├── src/state-engine.js               event sourcing + deterministic deltas
+├── src/semantics.js                  choices/quests/branches/predicates
+├── src/engine-integration.js         Unity DTO/export/ACK/save/checkpoint
+├── src/pi-actor-runner.ts            isolated Actor child-session adapter
+├── src/pi-arbiter-runner.ts          isolated Arbiter child-session adapter
+└── skills/                            author-facing narrative methods
+```
+
+Detailed docs: [Architecture](docs/ARCHITECTURE.md), [Domain Model](docs/DOMAIN_MODEL.md), [Actor Runtime](docs/ACTOR_RUNTIME.md), [State Engine](docs/STATE_ENGINE.md), [Game Semantics](docs/GAME_SEMANTICS.md), [Engine Integration](docs/ENGINE_INTEGRATION.md).
+
+## Core reliability invariants
+
+- Author-only facts are not sent to Actors.
+- Private Actor mental state is not exposed to other Actors.
+- Actor actions are attempts; uncertain world truth belongs to Arbiter + deterministic validation.
+- Authored game rules do not require an LLM judgment.
+- Event revisions are contiguous and stale writes are rejected.
+- Scene entry gates cannot be bypassed by simulation creation or branch routing.
+- Quest/branch/choice state is derived from state + event history.
+- Engine ACK state is not narrative truth.
+- Unacknowledged consequences remain eligible for redelivery.
+- Consumers must deduplicate side effects using stable `deliveryId` values.
+
+# Documentation Languages
+
+English remains at canonical existing paths. Simplified Chinese mirrors are available in parallel:
+
+- [中文 README](README.zh-CN.md)
+- [中文文档索引](docs/zh-CN/README.md)
+- every `docs/*.md` has a corresponding file under `docs/zh-CN/`;
+- ADRs mirror under `docs/zh-CN/decisions/`;
+- research mirrors under `docs/zh-CN/research/`;
+- human-readable Skill translations mirror under `docs/zh-CN/skills/` while executable `SKILL.md` files remain unchanged.
+
+`npm run check:docs` enforces translation-file coverage.
+
+# Development
+
+```bash
+npm test
+npm run check
+npm run validate:project -- examples/roadside-station
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](docs/ROADMAP.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
