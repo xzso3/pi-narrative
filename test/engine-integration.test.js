@@ -102,10 +102,18 @@ test("ACK rejects unknown delivery ids", () => {
   assert.throws(() => acknowledgeConsequences(root, "unity", ["pn-999-missing-0"]), /Unknown delivery id/);
 });
 
-test("sinceRevision provides incremental consequence windows", () => {
+test("unacknowledged consequences are never hidden by narrative cursor progress", () => {
   const root = fixture();
-  assert.equal(buildEngineExport(root, { consumerId: "unity", sinceRevision: 1 }).consequences.length, 0);
+  const first = buildEngineExport(root, { consumerId: "unity", sinceRevision: 1 });
+  assert.equal(first.cursor.revision, 2);
+  assert.equal(first.cursor.requestedSinceRevision, 1);
+  assert.equal(first.consequences.length, 1);
+  const id = first.consequences[0].deliveryId;
+  // Even when the consumer reports a later cursor, unACKed effects redeliver.
+  assert.equal(buildEngineExport(root, { consumerId: "unity", sinceRevision: 2 }).consequences[0].deliveryId, id);
   assert.throws(() => buildEngineExport(root, { sinceRevision: 99 }), /sinceRevision/);
+  acknowledgeConsequences(root, "unity", [id]);
+  assert.equal(buildEngineExport(root, { consumerId: "unity", sinceRevision: 2 }).consequences.length, 0);
 });
 
 test("save snapshot captures narrative cursor and ACK state with deterministic snapshot id", () => {
