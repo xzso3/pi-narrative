@@ -6,7 +6,7 @@ Engine Integration / Export Layer MVP:
 - Added versioned Unity-friendly engine export DTOs with deterministic snapshot IDs.
 - Added stable gameplay consequence delivery IDs and per-consumer durable ACK ledgers.
 - Defined at-least-once delivery semantics with mandatory consumer-side deliveryId deduplication.
-- Added incremental consequence export by narrative revision.
+- Pending consequences remain eligible for redelivery until explicitly ACKed; narrative cursor progress never suppresses unacknowledged side effects.
 - Added save-game snapshots carrying narrative cursor, state, and acknowledged delivery IDs.
 - Added hash-verified checkpoints for event-log prefixes and replayed state.
 - Added stable localization IDs with fallback authored text.
