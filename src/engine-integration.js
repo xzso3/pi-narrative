@@ -175,9 +175,10 @@ export function buildEngineExport(projectRoot, options = {}) {
   const events = listNarrativeEvents(projectRoot);
   const ledger = loadAckLedger(projectRoot, consumerId);
   const acked = new Set(ledger.acknowledgedDeliveryIds);
-  const sinceRevision = options.sinceRevision ?? 0;
-  if (!Number.isInteger(sinceRevision) || sinceRevision < 0 || sinceRevision > state.revision) throw new Error(`sinceRevision must be an integer between 0 and ${state.revision}.`);
-  const consequences = listConsequenceDeliveries(projectRoot).filter((item) => item.eventRevision > sinceRevision && !acked.has(item.deliveryId));
+  // ACK state is authoritative for delivery. Never hide an unacknowledged
+  // consequence behind a narrative revision cursor: doing so would violate
+  // at-least-once delivery if a consumer advanced its cursor before ACK.
+  const consequences = listConsequenceDeliveries(projectRoot).filter((item) => !acked.has(item.deliveryId));
   const localization = options.includeLocalization === false ? [] : buildLocalizationCatalog(projectRoot);
   const deterministic = {
     protocol: ENGINE_EXPORT_PROTOCOL,

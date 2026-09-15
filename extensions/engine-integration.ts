@@ -30,7 +30,6 @@ export default function engineIntegration(pi: ExtensionAPI) {
     description: "Build or persist a Unity-friendly deterministic engine export. Consequences use stable deliveryIds and at-least-once delivery semantics.",
     parameters: Type.Object({
       consumerId: Type.Optional(Type.String()),
-      sinceRevision: Type.Optional(Type.Integer({ minimum: 0 })),
       includeLocalization: Type.Optional(Type.Boolean()),
       write: Type.Optional(Type.Boolean()),
       projectRoot: Type.Optional(Type.String()),
@@ -39,7 +38,6 @@ export default function engineIntegration(pi: ExtensionAPI) {
       const projectRoot = root(params.projectRoot);
       const options = {
         consumerId: params.consumerId ?? "unity",
-        ...(params.sinceRevision != null ? { sinceRevision: params.sinceRevision } : {}),
         includeLocalization: params.includeLocalization ?? true,
       };
       return result(params.write ? writeEngineExport(projectRoot, options) : buildEngineExport(projectRoot, options));
@@ -158,7 +156,7 @@ export default function engineIntegration(pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       const validation = validateProjectForEngine(process.cwd(), { consumerId: "ci" });
       pi.sendMessage({ customType: "pi-narrative-engine-validation", content: JSON.stringify(validation, null, 2), display: true });
-      ctx.ui.notify(validation.valid ? "Engine integration validation passed." : "Engine integration validation failed.", validation.valid ? "info" : "error");
+      ctx.ui.notify( validation.valid ? "Engine integration validation passed." : "Engine integration validation failed.", validation.valid ? "info" : "error");
     },
   });
 
