@@ -1,0 +1,19 @@
+name: Validate Pi Narrative
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run regression suite and package checks
+        run: npm run check
+      - name: Validate Roadside Station engine contract
+        run: npm run validate:project -- examples/roadside-station

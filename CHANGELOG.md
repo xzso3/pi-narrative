@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 - 2026-09-15
+
+Engine Integration / Export Layer MVP:
+- Added versioned Unity-friendly engine export DTOs with deterministic snapshot IDs.
+- Added stable gameplay consequence delivery IDs and per-consumer durable ACK ledgers.
+- Defined at-least-once delivery semantics with mandatory consumer-side deliveryId deduplication.
+- Added incremental consequence export by narrative revision.
+- Added save-game snapshots carrying narrative cursor, state, and acknowledged delivery IDs.
+- Added hash-verified checkpoints for event-log prefixes and replayed state.
+- Added stable localization IDs with fallback authored text.
+- Added explicit project schema v1 migration while preserving legacy string schema labels.
+- Added deterministic engine-integration CI validator and CLI.
+- Added separate Pi engine-integration extension/tools/commands and Unity C# DTO sketch.
+
 ## 0.4.0 - 2026-09-15
 
 Game Narrative Semantics MVP:

@@ -2,7 +2,7 @@
 
 **Pi Narrative** is an experimental agent-based game narrative pipeline built as a Pi package. It separates author knowledge, character cognition, attempted action, world-state resolution, deterministic game-flow semantics, drafts, and approved canon.
 
-Current version: **v0.4 Game Narrative Semantics MVP**.
+Current version: **v0.5 Engine Integration / Export Layer MVP**.
 
 ## Core pipeline
 
@@ -28,11 +28,19 @@ Declarative Predicate DSL
 Scene Gates / Choices / Quests / Branches / Timeline
       ↓
 Gameplay consequence descriptors
+      ↓ stable deliveryId / export / ACK
+Unity / game runtime
       ↓
 Writer → Reviewer → human /canonize
 ```
 
-v0.4 adds a new invariant to the previous Actor/Arbiter boundary:
+v0.4 added deterministic game-flow semantics. v0.5 adds the engine boundary:
+
+> **Narrative truth and engine delivery state are separate systems.**
+
+NarrativeEvents remain authoritative. Engine exports, ACK ledgers, save snapshots, and checkpoints are derived integration artifacts.
+
+The previous invariant still holds:
 
 > **Game flow is deterministic data, not an LLM judgment.**
 
@@ -142,6 +150,36 @@ narrative/
 
 Quest, branch, choice availability, and scene-gate results are **derived views**, not independent mutable state.
 
+
+## v0.5 engine integration
+
+Engine export is deterministic with respect to narrative revision + consumer ACK state. Gameplay consequences receive stable IDs such as:
+
+```text
+pn-12-choice-departure-trade-0
+```
+
+Delivery is **at-least-once**. Unity (or another consumer) must persist each applied `deliveryId` and skip duplicates before applying side effects. ACK is durable and idempotent, but ACK alone cannot close the crash window between applying an in-engine side effect and recording the ACK.
+
+The export includes:
+
+- Unity-friendly array DTOs for characters, resources, relationships, attributes, and world flags
+- pending unacknowledged gameplay consequences
+- stable localization IDs with fallback text
+- event cursor + deterministic `snapshotId`
+
+Derived integration paths:
+
+```text
+narrative/
+├── runtime/<consumer>/acks.json
+├── exports/<consumer>/...
+├── exports/savegames/<consumer>/...
+└── checkpoints/...
+```
+
+These files do not replace `state/initial.json + events/*`.
+
 ## Pi tools
 
 Simulation/state tools:
@@ -167,6 +205,15 @@ v0.4 semantic tools:
 - `narrative_gameplay_consequences`
 - `narrative_flow`
 
+v0.5 engine integration tools:
+
+- `narrative_engine_export`
+- `narrative_engine_ack`
+- `narrative_save_snapshot`
+- `narrative_checkpoint`
+- `narrative_engine_validate`
+- `narrative_project_migration_preview`
+
 Commands:
 
 - `/narrative-status`
@@ -178,6 +225,12 @@ Commands:
 - `/timeline`
 - `/simulate-scene <scene-id> [max-turns]`
 - `/canonize <scene-id>`
+- `/engine-export [consumer-id]`
+- `/engine-ack <consumer-id> <delivery-id> [delivery-id...]`
+- `/engine-save [consumer-id] [slot-id]`
+- `/engine-checkpoint [label]`
+- `/engine-validate`
+- `/engine-migrate`
 
 `/choose` asks for confirmation before appending the authoritative choice event.
 
@@ -191,12 +244,13 @@ Pi package
 ├── src/runtime.js                    scene/turn orchestration
 ├── src/state-engine.js               event sourcing + typed deltas
 ├── src/semantics.js                  deterministic game-flow semantics
+├── src/engine-integration.js         export / ACK / save / checkpoint / migration
 ├── src/core.js                       authored data + knowledge boundary
 ├── skills/                            author-facing narrative methods
 └── narrative project files           durable source of truth
 ```
 
-**Skill = cognition. Extension = infrastructure. Runtime = orchestration. Event log = mutable truth. Semantics = deterministic game flow. Canon = approved authored output.**
+**Skill = cognition. Extension = infrastructure. Runtime = orchestration. Event log = mutable truth. Semantics = deterministic game flow. Engine integration = derived delivery boundary. Canon = approved authored output.**
 
 ## Reliability properties
 
@@ -209,6 +263,10 @@ Pi package
 - Quest state can be rebuilt entirely from state/event history.
 - Branches cannot bypass the target scene's own entry gate.
 - Timeline violations are deterministic diagnostics rather than prompt-only warnings.
+- Engine consequence delivery IDs are deterministic across repeated exports.
+- ACK writes are idempotent and consumer-scoped.
+- Checkpoints hash both event-log prefix and replayed state.
+- Legacy project schema labels migrate explicitly instead of silently changing format.
 
 ## Test
 
@@ -217,10 +275,10 @@ npm test
 npm run check
 ```
 
-v0.4 regression coverage includes all previous epistemic/state boundaries plus predicate evaluation, scene gates, deterministic choice effects, single-use choices, branch resolution, derived quest state, timeline continuity/order checks, gameplay consequence persistence, and unified flow snapshots.
+v0.5 adds engine-integration coverage for deterministic export DTOs, ACK idempotency, unknown ACK rejection, incremental consequence windows, save snapshots, checkpoint tamper detection, project schema migration, localization IDs, and CI validation. Previous v0.1–v0.4 coverage remains unchanged.
 
 ## Current limits
 
-v0.4 does **not** execute Unity/game-engine consequences, provide a stable export schema, model localization IDs, spatial/combat rules, quest timers, multiplayer authority, arbitrary scripting, or a graph authoring UI. `gameplayConsequences` are durable engine-facing descriptors only; v0.5 will define the export/acknowledgement layer.
+v0.5 defines the stable file/DTO boundary but still does **not** provide a network transport, Unity package installer, exactly-once distributed transaction, multiplayer authority, spatial/combat simulation, arbitrary scripting, or graph authoring UI.
 
-See `docs/MVP_V0.4.md`, `docs/GAME_SEMANTICS.md`, `docs/STATE_ENGINE.md`, ADRs, and `docs/ROADMAP.md`.
+See `docs/MVP_V0.5.md`, `docs/ENGINE_INTEGRATION.md`, `docs/GAME_SEMANTICS.md`, `docs/STATE_ENGINE.md`, and ADRs.

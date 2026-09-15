@@ -1,7 +1,7 @@
 {
   "name": "pi-narrative",
-  "version": "0.4.0",
-  "description": "Agent-based game narrative pipeline for Pi with isolated Actors, Arbiter-resolved state, deterministic choices/quests/branches, timeline constraints, and canonization.",
+  "version": "0.5.0",
+  "description": "Agent-based game narrative pipeline for Pi with deterministic engine export, idempotent consequence delivery, checkpoints, and save snapshots.",
   "type": "module",
   "license": "MIT",
   "private": false,
@@ -10,6 +10,7 @@
   },
   "scripts": {
     "test": "node --test",
+    "validate:project": "node scripts/validate-project.mjs",
     "check": "node scripts/check-package.mjs && npm test"
   },
   "peerDependencies": {
@@ -28,6 +29,9 @@
     "extensions",
     "src",
     "skills",
+    "scripts",
+    "examples/unity",
+    "docs/ENGINE_INTEGRATION.md",
     "README.md",
     "LICENSE"
   ],
@@ -36,7 +40,8 @@
     "agent",
     "narrative",
     "game-writing",
-    "roleplay",
+    "unity",
+    "middleware",
     "storytelling"
   ]
 }
