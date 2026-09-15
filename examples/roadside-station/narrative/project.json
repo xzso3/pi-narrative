@@ -1,5 +1,7 @@
 {
-  "schemaVersion": "0.4",
+  "protocol": "pi-narrative.project/v1",
+  "schemaVersion": 1,
+  "legacySchemaVersion": "0.4",
   "id": "roadside-station-demo",
   "title": "Roadside Station Demo",
   "sceneOrder": ["fuel-bargain", "north-road", "storm-shelter"]

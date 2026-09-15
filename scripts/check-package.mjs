@@ -6,6 +6,7 @@ for (const key of required) {
 }
 for (const file of [
   "extensions/narrative-runtime.ts",
+  "extensions/engine-integration.ts",
   "skills/roleplay-actor/SKILL.md",
   "skills/narrative-director/SKILL.md",
   "skills/scene-writer/SKILL.md",
@@ -15,6 +16,9 @@ for (const file of [
   "src/pi-arbiter-runner.ts",
   "src/semantics.js",
   "skills/game-narrative-semantics/SKILL.md",
+  "src/engine-integration.js",
+  "skills/engine-integration/SKILL.md",
+  "scripts/validate-project.mjs",
 ]) {
   if (!fs.existsSync(new URL(`../${file}`, import.meta.url))) throw new Error(`Missing ${file}`);
 }

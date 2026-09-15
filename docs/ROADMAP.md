@@ -37,14 +37,16 @@
 - Persisted engine-facing gameplay consequence descriptors.
 - Unified flow inspection through Pi tools/commands.
 
-## v0.5 — Engine/export layer
+## v0.5 — Engine/export layer ✅
 
-- Stable external semantic schema and localization IDs.
-- Unity-friendly export/import package.
-- Gameplay consequence acknowledgement/idempotency contract.
-- Validation report suitable for CI.
-- Snapshot/checkpoint strategy for long event logs.
-- Migration/versioning rules for narrative project data.
+- Stable versioned engine DTO and localization IDs.
+- Unity-friendly array DTO sketch.
+- Stable gameplay consequence delivery IDs.
+- At-least-once delivery + durable per-consumer ACK contract.
+- Save-game snapshots carrying state/cursor/ACK state.
+- Hash-verified event-log checkpoints.
+- CI validator and GitHub Actions workflow.
+- Explicit project schema migration/versioning rules.
 
 ## v0.6 — Authoring UX
 
@@ -53,3 +55,10 @@
 - Character knowledge/state inspector.
 - Timeline/branch visualization.
 - Pi SDK/RPC-backed authoring application.
+
+## Later
+
+- Transport adapters (Pi RPC / local IPC / HTTP bridge) for engine consumers.
+- Generated Unity package / schema codegen.
+- Localization translation pipeline.
+- Multiplayer authority and replication semantics.
